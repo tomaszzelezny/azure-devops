@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <title>Aging WIP – konfiguracja</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="config">
+    <label class="field"><span>Zespół</span><select id="team"></select></label>
+    <label class="field"><span>Linia ostrzegawcza</span>
+      <select id="threshold">
+        <option value="30">30 dni</option>
+        <option value="90">90 dni</option>
+        <option value="180">pół roku</option>
+        <option value="365">rok</option>
+        <option value="730">2 lata</option>
+      </select>
+    </label>
+    <div class="field"><span>Typy elementów</span><div class="chips" id="types"></div></div>
+    <div class="field"><span>Stany</span><div class="chips" id="states"></div></div>
+  </div>
+  <script src="config.js"></script>
+</body>
+</html>

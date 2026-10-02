@@ -1,0 +1,133 @@
+/* Palette from the "Azure DevOps + AI" deck (slide 1.f Aging WIP), light and dark variants.
+   Surface and text colours come from the Azure DevOps theme variables when available. */
+:root {
+  --page: var(--background-color, #ffffff);
+  --surface: var(--callout-background-color, var(--background-color, #ffffff));
+  --ink: var(--text-primary-color, rgba(0, 0, 0, .9));
+  --ink-2: var(--text-secondary-color, rgba(0, 0, 0, .55));
+  --muted: #858a90;
+  --grid: #e3e5e7;
+  --axis: #c5c9cd;
+  --line: rgba(16, 18, 20, .10);
+  --chip: #eef0f2;
+  --crit: #d03b3b;
+  --focus: #2a78d6;
+  --c0: #eb6834; --c1: #1baf7a; --c2: #4a3aa7; --c3: #2a78d6;
+  --c4: #eda100; --c5: #e87ba4; --c6: #008300; --c7: #e34948;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --page: var(--background-color, #1b1a19);
+  --surface: var(--callout-background-color, var(--background-color, #252423));
+  --ink: var(--text-primary-color, rgba(255, 255, 255, .9));
+  --ink-2: var(--text-secondary-color, rgba(255, 255, 255, .6));
+  --muted: #8a8f95;
+  --grid: #2a2c2e;
+  --axis: #3a3d40;
+  --line: rgba(255, 255, 255, .10);
+  --chip: #232527;
+  --crit: #e66767;
+  --focus: #3987e5;
+  --c0: #d95926; --c1: #199e70; --c2: #9085e9; --c3: #3987e5;
+  --c4: #c98500; --c5: #d55181; --c6: #0ca30c; --c7: #e66767;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font: 14px "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+}
+.mono { font-family: var(--mono); }
+[hidden] { display: none !important; }
+
+/* ---------- chart ---------- */
+.chart { width: 100%; }
+.chart svg { display: block; overflow: visible; }
+.grid line { stroke: var(--grid); }
+.axis text { fill: var(--muted); font-variant-numeric: tabular-nums; }
+.label { fill: var(--muted); }
+.diag { stroke: var(--axis); stroke-dasharray: 3 3; }
+.base { stroke: var(--axis); }
+.thr { stroke: var(--crit); opacity: .6; }
+.thr-label { fill: var(--crit); font-weight: 600; }
+.dot { stroke: var(--surface); stroke-width: 1.5; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 8px; }
+.lg {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: 12px; color: var(--ink-2);
+  background: none; border: 0; padding: 2px 0;
+}
+button.lg { cursor: pointer; border-radius: 4px; }
+button.lg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.lg i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.lg .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.lg.off { opacity: .4; text-decoration: line-through; }
+
+.take { margin: 10px 0 0; color: var(--ink-2); line-height: 1.45; }
+.take b { color: var(--ink); }
+
+.tip {
+  position: fixed; z-index: 10; pointer-events: none; max-width: 320px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .16);
+  padding: 8px 10px; font-size: 12px;
+}
+.tip .t { font-weight: 600; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tip .row { display: grid; grid-template-columns: 10px auto 1fr; gap: 6px; align-items: center; }
+.tip .row i { width: 8px; height: 8px; border-radius: 50%; }
+.tip .row span { color: var(--muted); }
+.tip .row b { font-weight: 600; text-align: right; }
+
+.status { color: var(--ink-2); padding: 24px 0; }
+.status.err { color: var(--crit); }
+
+/* ---------- hub ---------- */
+.hub { padding: 16px 20px 32px; max-width: 1400px; }
+.hub h1 { font-size: 20px; font-weight: 600; margin: 0 0 2px; }
+.hub .sub { color: var(--ink-2); margin: 0 0 16px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-start; margin-bottom: 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > span { font-size: 12px; color: var(--muted); }
+select, .btn {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px;
+}
+.btn { cursor: pointer; }
+.btn:hover { background: var(--chip); }
+select:focus-visible, .btn:focus-visible, .chip:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  background: var(--chip); border-radius: 12px; padding: 3px 10px; font-size: 12px;
+}
+.chip input { margin: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
+
+details { margin-top: 16px; }
+summary { cursor: pointer; color: var(--ink-2); }
+table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 13px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td a { color: var(--focus); text-decoration: none; cursor: pointer; }
+td a:hover { text-decoration: underline; }
+.tbl { overflow-x: auto; }
+
+/* ---------- widget ---------- */
+.widget { padding: 10px 14px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.widget h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.widget .legend { margin-bottom: 2px; }
+.widget .chart { flex: 1; min-height: 0; }
+.widget .take { font-size: 12px; margin-top: 4px; }
+
+/* ---------- widget configuration ---------- */
+.config { padding: 4px 2px; display: flex; flex-direction: column; gap: 14px; }
+.config .chips { flex-direction: column; gap: 4px; }
+.config .chip { background: none; padding: 0; border-radius: 0; font-size: 13px; }
+.config select { width: 100%; }
