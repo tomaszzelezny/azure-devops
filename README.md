@@ -44,7 +44,7 @@ npm run package     # build + .vsix in out/
 ## Publish and install
 
 1. Create a publisher at <https://marketplace.visualstudio.com/manage/createpublisher>.
-2. Put its ID in the `publisher` field of `vss-extension.json` (or pass it when packaging: `npm run package -- --publisher YOUR-ID`).
+2. The `publisher` field in `vss-extension.json` is set to `TomaszZelezny`; to publish under another publisher, change it or pass `npm run package -- --publisher YOUR-ID`.
 3. Upload `out/*.vsix` in the publisher portal (**New extension → Azure DevOps**). The extension is private (`"public": false`).
 4. In the publisher portal: **Share** → your Azure DevOps organization name.
 5. In the organization: **Organization settings → Extensions → Shared** → install.
