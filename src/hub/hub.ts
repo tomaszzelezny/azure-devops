@@ -56,7 +56,7 @@ function status(msg: string, err = false): void {
 
 async function reload(): Promise<void> {
   const seq = ++loadSeq;
-  status("Ładowanie elementów…");
+  status("Loading work items…");
   try {
     const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta));
     if (seq !== loadSeq) return; // a newer request superseded this one
@@ -87,11 +87,11 @@ function draw(): void {
 
 function renderTable(points: AgingPoint[]): void {
   const top = [...points].sort((a, b) => b.inState - a.inState).slice(0, 50);
-  const n = (v: number) => Math.round(v).toLocaleString("pl-PL");
-  $("tableTitle").textContent = `Najdłużej w obecnym stanie (${top.length} z ${points.length})`;
+  const n = (v: number) => Math.round(v).toLocaleString();
+  $("tableTitle").textContent = `Longest in current state (${top.length} of ${points.length})`;
   $("table").innerHTML =
-    `<table><thead><tr><th>ID</th><th>Tytuł</th><th>Typ</th><th>Stan</th>` +
-    `<th class="num">W stanie (dni)</th><th class="num">Wiek (dni)</th><th>Przypisany</th></tr></thead><tbody>` +
+    `<table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>State</th>` +
+    `<th class="num">In state (days)</th><th class="num">Age (days)</th><th>Assigned to</th></tr></thead><tbody>` +
     top.map((p) => `<tr><td><a data-id="${p.item.id}" class="mono">${p.item.id}</a></td><td>${esc(p.item.title)}</td>` +
       `<td>${esc(p.item.type)}</td><td>${esc(p.item.state)}</td><td class="num">${n(p.inState)}</td>` +
       `<td class="num">${n(p.age)}</td><td>${esc(p.item.assignedTo)}</td></tr>`).join("") +
@@ -108,7 +108,7 @@ async function main(): Promise<void> {
   meta = m;
 
   const team = $("team") as HTMLSelectElement;
-  team.innerHTML = `<option value="">Cały projekt</option>` +
+  team.innerHTML = `<option value="">Entire project</option>` +
     teams.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
   if (!teams.some((t) => t.id === settings.teamId)) settings.teamId = "";
   team.value = settings.teamId;

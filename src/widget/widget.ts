@@ -1,6 +1,6 @@
 import * as SDK from "azure-devops-extension-sdk";
 import { renderAgingChart, renderLegend, esc } from "../core/chart.ts";
-import { effectiveStates, effectiveTypes, seriesFor, summary, thresholdLabel, toPoints, type AgingPoint } from "../core/compute.ts";
+import { effectiveStates, effectiveTypes, NO_ITEMS, seriesFor, summary, thresholdLabel, toPoints, type AgingPoint } from "../core/compute.ts";
 import { loadProjectMeta, loadWipItems } from "../core/data.ts";
 import { openWorkItem } from "../core/navigation.ts";
 import { watchTheme } from "../core/theme.ts";
@@ -18,8 +18,8 @@ function draw(): void {
   renderLegend($("legend"), series, hidden);
   const s = summary(points, threshold);
   $("take").innerHTML = s.total
-    ? `<b>${s.stuck} z ${s.total}</b> w tym samym stanie ponad ${esc(thresholdLabel(threshold))}`
-    : "Brak otwartych elementów w wybranych stanach.";
+    ? `<b>${s.stuck} of ${s.total}</b> in the same state for more than ${esc(thresholdLabel(threshold))}`
+    : NO_ITEMS;
   // Measure after the legend and summary are in place, so the chart gets exactly the remaining height.
   const chart = $("chart");
   chart.innerHTML = "";

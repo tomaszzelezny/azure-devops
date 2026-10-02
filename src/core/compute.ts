@@ -90,18 +90,11 @@ export function escapeWiql(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
 
-/** Polish plural form: 1 element, 2–4 elementy, 5+ elementów (12–14 → elementów). */
-export function plural(n: number, one: string, few: string, many: string): string {
-  if (n === 1) return one;
-  const d = n % 10, h = n % 100;
-  return d >= 2 && d <= 4 && !(h >= 12 && h <= 14) ? few : many;
-}
-
 export function thresholdLabel(days: number): string {
-  if (days === 365) return "rok";
-  if (days === 730) return "2 lata";
-  if (days === 180) return "pół roku";
-  return `${days} dni`;
+  if (days === 365) return "1 year";
+  if (days === 730) return "2 years";
+  if (days === 180) return "6 months";
+  return `${days} days`;
 }
 
 export function summary(points: AgingPoint[], thresholdDays: number): { stuck: number; fresh: number; total: number } {
@@ -112,12 +105,13 @@ export function summary(points: AgingPoint[], thresholdDays: number): { stuck: n
   };
 }
 
+export const NO_ITEMS = "No open work items in the selected states.";
+
 export function takeaway(points: AgingPoint[], thresholdDays: number): string {
   const { stuck, fresh, total } = summary(points, thresholdDays);
-  if (!total) return "Brak otwartych elementów w wybranych stanach.";
-  const verb = plural(fresh, "element zmienił", "elementy zmieniły", "elementów zmieniło");
-  const tail = fresh === 0 ? "Żaden nie zmienił stanu w ostatnich 30 dniach."
-    : fresh === total ? "Wszystkie zmieniły stan w ostatnich 30 dniach."
-    : `Tylko ${fresh} ${verb} stan w ostatnich 30 dniach.`;
-  return `<b>${stuck} z ${total}</b> elementów stoi w tym samym stanie ponad ${thresholdLabel(thresholdDays)}. ${tail}`;
+  if (!total) return NO_ITEMS;
+  const tail = fresh === 0 ? "None of them changed state in the last 30 days."
+    : fresh === total ? "All of them changed state in the last 30 days."
+    : `Only ${fresh} ${fresh === 1 ? "item" : "items"} changed state in the last 30 days.`;
+  return `<b>${stuck} of ${total}</b> items have been in the same state for more than ${thresholdLabel(thresholdDays)}. ${tail}`;
 }

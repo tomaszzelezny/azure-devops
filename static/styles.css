@@ -1,4 +1,4 @@
-/* Palette from the "Azure DevOps + AI" deck (slide 1.f Aging WIP), light and dark variants.
+/* Palette from the "Azure DevOps + AI" deck (Aging WIP slide), light and dark variants.
    Surface and text colours come from the Azure DevOps theme variables when available. */
 :root {
   --page: var(--background-color, #ffffff);

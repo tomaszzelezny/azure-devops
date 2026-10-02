@@ -1,70 +1,70 @@
-# Aging WIP dla Azure DevOps
+# Aging WIP for Azure DevOps
 
-Rozszerzenie Azure DevOps z wykresem **Aging WIP** (slajd 1.f z prezentacji „Azure DevOps + AI do analizy danych”).
+An Azure DevOps extension that adds an **Aging WIP** chart to Azure Boards, based on the Aging WIP slide of the "Azure DevOps + AI" deck.
 
-Każda kropka to otwarty element w toku:
+Each dot is an open work item:
 
-- **oś X**: wiek elementu, czyli dni od utworzenia (`System.CreatedDate`),
-- **oś Y**: dni w obecnym stanie (`Microsoft.VSTS.Common.StateChangeDate`),
-- **przerywana przekątna**: elementy, które nie zmieniły stanu od utworzenia,
-- **czerwona linia**: próg „N dni w tym samym stanie” (domyślnie rok; do wyboru 30 dni, 90 dni, pół roku, rok, 2 lata),
-- kolor kropki to stan; najechanie pokazuje szczegóły, kliknięcie otwiera work item.
+- **x axis**: age, days since the item was created (`System.CreatedDate`),
+- **y axis**: days in the current state (`Microsoft.VSTS.Common.StateChangeDate`),
+- **dashed diagonal**: items that have not changed state since they were created,
+- **red line**: "N days in the same state" threshold (1 year by default; 30 days, 90 days, 6 months, 1 year or 2 years),
+- dot colour is the state; hover for details, click to open the work item.
 
-Pod wykresem jest podsumowanie w stylu prezentacji („27 z 140 elementów stoi w tym samym stanie ponad rok. Tylko 50 elementów zmieniło stan w ostatnich 30 dniach.”).
+Below the chart there is a one-line summary, e.g. "27 of 140 items have been in the same state for more than 1 year. Only 50 items changed state in the last 30 days."
 
-## Co zawiera rozszerzenie
+## What's included
 
-| Element | Gdzie | Opis |
+| Part | Where | Description |
 |---|---|---|
-| Hub **Aging WIP** | Boards → Aging WIP | Wybór zespołu, typów, stanów i progu; legenda z liczbami (klik ukrywa stan); tabela 50 elementów najdłużej stojących w obecnym stanie. Ustawienia zapamiętywane w przeglądarce per projekt. |
-| Widget **Aging WIP** | Dashboard → Add widget | Rozmiary od 2×2 do 6×4. Konfiguracja: zespół (domyślnie zespół dashboardu), typy, stany, próg. |
+| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states and threshold; legend with counts (click to hide a state); table of the 50 items longest in their current state. Settings are remembered in the browser per project. |
+| **Aging WIP** widget | Dashboard → Add widget | Sizes from 2×2 to 6×4. Configuration: team (defaults to the dashboard's team), types, states, threshold. |
 
-## Jak liczone są dane
+## How the data is computed
 
-1. Typy i stany pobierane są z procesu projektu (`_apis/wit/workitemtypes`), więc działa to z Agile, Scrum, CMMI, Basic i procesami dziedziczonymi.
-   - Domyślne typy: kategorie Requirement i Bug (np. User Story + Bug albo Product Backlog Item + Bug).
-   - Domyślne stany: wszystkie w kategoriach **InProgress** i **Resolved** (np. Active, Resolved, a także własne stany typu OnHold czy For Testing, jeśli należą do tych kategorii).
-2. Zapytanie WIQL zwraca otwarte elementy w wybranych stanach. Dla zespołu dodawany jest filtr po jego obszarach (team field values, zwykle Area Path z „include children”).
-3. Pola elementów pobierane są paczkami po 200 (`workitemsbatch`).
-4. Jeśli w procesie brakuje `StateChangeDate`, data ostatniej zmiany stanu jest odczytywana z historii (`updates`) danego elementu.
+1. Work item types and states come from the project's process (`_apis/wit/workitemtypes`), so Agile, Scrum, CMMI, Basic and inherited processes all work.
+   - Default types: the Requirement and Bug categories (e.g. User Story + Bug, or Product Backlog Item + Bug).
+   - Default states: every state in the **InProgress** and **Resolved** categories (e.g. Active, Resolved, plus custom states such as OnHold or For Testing when they belong to those categories).
+2. A WIQL query returns open items in the selected states. For a team it adds the team's area filter (team field values, usually Area Path with "include children").
+3. Fields are fetched in batches of 200 (`workitemsbatch`).
+4. If the process has no `StateChangeDate`, the last state change is read from the item's update history.
 
-Uprawnienia (scopes): `vso.work` (odczyt work itemów) i `vso.project` (lista zespołów). Rozszerzenie nic nie zapisuje w Azure DevOps.
+Scopes: `vso.work` (read work items) and `vso.project` (list teams). The extension never writes to Azure DevOps.
 
-## Budowanie
+## Build
 
-Wymagany Node.js 20+.
+Requires Node.js 20+.
 
 ```bash
 npm install
-npm test            # testy logiki obliczeń
-npm run build       # typecheck + bundle do dist/
-npm run package     # build + paczka .vsix w out/
+npm test            # unit tests for the calculations
+npm run build       # typecheck + bundle into dist/
+npm run package     # build + .vsix in out/
 ```
 
-## Publikacja i instalacja
+## Publish and install
 
-1. Załóż publishera na <https://marketplace.visualstudio.com/manage/createpublisher>.
-2. Wpisz jego ID w polu `publisher` w `vss-extension.json` (albo podaj przy pakowaniu: `npm run package -- --publisher TWOJ-ID`).
-3. Wgraj plik `out/*.vsix` w panelu publishera (**New extension → Azure DevOps**). Rozszerzenie jest prywatne (`"public": false`).
-4. W panelu publishera: **Share** → nazwa organizacji Azure DevOps.
-5. W organizacji: **Organization settings → Extensions → Shared** → zainstaluj.
+1. Create a publisher at <https://marketplace.visualstudio.com/manage/createpublisher>.
+2. Put its ID in the `publisher` field of `vss-extension.json` (or pass it when packaging: `npm run package -- --publisher YOUR-ID`).
+3. Upload `out/*.vsix` in the publisher portal (**New extension → Azure DevOps**). The extension is private (`"public": false`).
+4. In the publisher portal: **Share** → your Azure DevOps organization name.
+5. In the organization: **Organization settings → Extensions → Shared** → install.
 
-Do testów obok wersji produkcyjnej: `npm run package:dev` tworzy osobne rozszerzenie `aging-wip-dev`.
+To test alongside the production version: `npm run package:dev` builds a separate `aging-wip-dev` extension.
 
-## Struktura
+## Layout
 
 ```
-src/core/compute.ts   obliczenia (wiek, czas w stanie, domyślne typy i stany, podsumowanie) – czyste funkcje
-src/core/data.ts      pobieranie danych z REST API Azure DevOps
-src/core/chart.ts     wykres SVG, tooltip, legenda
-src/hub/hub.ts        hub w Boards
-src/widget/           widget dashboardu i jego konfiguracja
-static/               HTML i CSS (paleta z prezentacji, jasny i ciemny motyw)
-vss-extension.json    manifest rozszerzenia
+src/core/compute.ts   calculations (age, time in state, default types and states, summary) – pure functions
+src/core/data.ts      data loading from the Azure DevOps REST API
+src/core/chart.ts     SVG chart, tooltip, legend
+src/hub/hub.ts        Boards hub
+src/widget/           dashboard widget and its configuration
+static/               HTML and CSS (deck palette, light and dark theme)
+vss-extension.json    extension manifest
 ```
 
-## Ograniczenia
+## Limitations
 
-- WIQL zwraca maksymalnie 20 000 elementów.
-- Wiek liczony jest od utworzenia elementu, tak jak w prezentacji, a nie od wejścia w pracę.
-- Masowe zmiany stanu (np. hurtowe przeniesienie elementów) resetują „dni w obecnym stanie”, bo tak działa `StateChangeDate`.
+- WIQL returns at most 20,000 items.
+- Age is measured from creation, as in the deck, not from when work started.
+- Bulk state changes reset "days in current state", because that is how `StateChangeDate` works.

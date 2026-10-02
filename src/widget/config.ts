@@ -45,7 +45,7 @@ async function load(ws: WidgetSettings, ctx: ConfigurationContext) {
   meta = m;
 
   const team = $<HTMLSelectElement>("team");
-  team.innerHTML = `<option value="${DASHBOARD_TEAM}">Zespół dashboardu</option><option value="">Cały projekt</option>` +
+  team.innerHTML = `<option value="${DASHBOARD_TEAM}">Dashboard team</option><option value="">Entire project</option>` +
     teams.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
   team.value = settings.teamId === undefined ? DASHBOARD_TEAM : settings.teamId;
   team.addEventListener("change", () => {

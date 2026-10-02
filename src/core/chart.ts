@@ -9,7 +9,7 @@ function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, 
   return e;
 }
 
-const fmt = (v: number) => Math.round(v).toLocaleString("pl-PL");
+const fmt = (v: number) => Math.round(v).toLocaleString();
 
 export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -79,17 +79,17 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
     el("text", { x: x(v), y: H - mb + 15, "text-anchor": "middle" }, ax).textContent = fmt(v);
   }
   el("text", { x: (ml + W - mr) / 2, y: H - 3, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
-    .textContent = "wiek elementu (dni od utworzenia)";
+    .textContent = "age (days since created)";
   const cy = (mt + H - mb) / 2;
   el("text", { x: 10, y: cy, transform: `rotate(-90 10 ${cy})`, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
-    .textContent = "dni w obecnym stanie";
+    .textContent = "days in current state";
 
   el("line", { x1: x(0), y1: y(0), x2: x(m), y2: y(m), class: "diag" }, svg);
   const thr = opts.thresholdDays;
   if (thr < m) {
     el("line", { x1: ml, x2: W - mr, y1: y(thr), y2: y(thr), class: "thr" }, svg);
     el("text", { x: W - mr - 4, y: y(thr) - 5, "text-anchor": "end", class: "thr-label", "font-size": fs }, svg)
-      .textContent = `${thresholdLabel(thr)} w tym samym stanie`;
+      .textContent = `${thresholdLabel(thr)} in the same state`;
   }
   el("line", { x1: ml, x2: W - mr, y1: y(0), y2: y(0), class: "base" }, svg);
 
@@ -120,11 +120,11 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
       `<div class="row">${sw ? `<i style="background:${sw}"></i>` : "<i></i>"}<span>${k}</span><b>${esc(v)}</b></div>`;
     showTip(ev,
       `<div class="t"><span class="mono">#${it.id}</span> ${esc(it.title)}</div>` +
-      row("Typ", it.type) +
-      row("Stan", it.state, color.get(it.state)) +
-      row("Wiek", `${fmt(best.p.age)} dni`) +
-      row("W obecnym stanie", `${fmt(best.p.inState)} dni`) +
-      (it.assignedTo ? row("Przypisany", it.assignedTo) : ""));
+      row("Type", it.type) +
+      row("State", it.state, color.get(it.state)) +
+      row("Age", `${fmt(best.p.age)} days`) +
+      row("In current state", `${fmt(best.p.inState)} days`) +
+      (it.assignedTo ? row("Assigned to", it.assignedTo) : ""));
   });
   hit.addEventListener("mouseleave", () => { current = undefined; hideTip(); });
   hit.addEventListener("click", () => { if (current && opts.onOpen) opts.onOpen(current.item.id); });
@@ -139,7 +139,7 @@ export function renderLegend(host: HTMLElement, series: StateSeries[], hidden: S
     b.innerHTML = `<i style="background:var(--c${s.color})"></i>${esc(s.name)} <span class="n">${s.count}</span>`;
     if (onToggle) {
       b.setAttribute("aria-pressed", String(!hidden.has(s.name)));
-      b.title = "Pokaż / ukryj";
+      b.title = "Show / hide";
       b.addEventListener("click", () => onToggle(s.name));
     }
     host.appendChild(b);
