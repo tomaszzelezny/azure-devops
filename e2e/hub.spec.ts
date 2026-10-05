@@ -152,8 +152,24 @@ test.describe("hub · other processes and failures", () => {
     await expect(page.locator("#take")).toHaveText("No open work items in the selected states.");
   });
 
+  test("shows a loader while data is fetched, also on refresh", async ({ page }) => {
+    await page.goto("hub.html?delay=100");
+    const loader = page.locator("#status.loading");
+    await expect(loader).toBeVisible();
+    await expect(loader.locator(".spinner")).toBeVisible();
+    await expect(page.locator("#result")).toBeHidden();
+    await expect(page.locator("#status")).toBeHidden({ timeout: 15_000 });
+    await expect(page.locator("#result")).toBeVisible();
+
+    await page.click("#refresh");
+    await expect(loader).toBeVisible();
+    await expect(page.locator("#status")).toBeHidden({ timeout: 15_000 });
+    await expect(dots(page).first()).toBeVisible();
+  });
+
   test("API errors are shown to the user", async ({ page }) => {
     await page.goto("hub.html?scenario=error");
+    await expect(page.locator("#status .spinner")).toHaveCount(0);
     await expect(page.locator("#status.err")).toContainText("VS402337");
     await expect(page.locator("#result")).toBeHidden();
   });

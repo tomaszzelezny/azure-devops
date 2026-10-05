@@ -27,6 +27,8 @@ function draw(): void {
 }
 
 async function render(ws: WidgetSettings): Promise<WidgetStatus> {
+  const loading = $("loading");
+  loading.hidden = false;
   try {
     $("title").textContent = ws.name || "Aging WIP";
     const ctx = SDK.getWebContext();
@@ -42,6 +44,8 @@ async function render(ws: WidgetSettings): Promise<WidgetStatus> {
   } catch (e) {
     // Dashboards expect a rejected promise carrying a user-visible message on failure.
     throw { message: e instanceof Error ? e.message : String(e), isUserVisible: true, isRichText: false };
+  } finally {
+    loading.hidden = true;
   }
 }
 

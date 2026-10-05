@@ -73,7 +73,8 @@ function updates(item: MockItem, now: number) {
   return out;
 }
 
-export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now()) {
+/** delayMs: every API response waits this long, to see the loading state. */
+export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now(), delayMs = 0) {
   const calls: RecordedCall[] = [];
   const isProject = (seg: string) => seg === project.id || seg === project.name;
 
@@ -132,6 +133,7 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
     const path = url.pathname.slice(MOCK_BASE.length);
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
     calls.push({ method, path: path + url.search, body });
+    if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
 
     const auth = new Headers(init?.headers).get("Authorization");
     if (auth !== `Bearer ${MOCK_TOKEN}`) return json(401, { message: "Missing or wrong bearer token" });
