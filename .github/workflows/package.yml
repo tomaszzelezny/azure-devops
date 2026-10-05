@@ -1,0 +1,30 @@
+name: Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      visibility:
+        description: Marketplace visibility of the .vsix
+        type: choice
+        options: [public, private]
+        default: public
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run package:public
+        if: inputs.visibility == 'public'
+      - run: npm run package
+        if: inputs.visibility == 'private'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ inputs.visibility }}
+          path: out/*.vsix
