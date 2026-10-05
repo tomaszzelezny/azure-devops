@@ -45,10 +45,11 @@ function renderControls(): void {
   ($("threshold") as HTMLSelectElement).value = String(settings.thresholdDays);
 }
 
+/** Shows a message instead of the result: a spinner while loading, red text for errors, nothing once loaded. */
 function status(msg: string, err = false): void {
   const s = $("status");
-  s.textContent = msg;
-  s.className = "status" + (err ? " err" : "");
+  s.innerHTML = err ? esc(msg) : `<span class="spinner" aria-hidden="true"></span>${esc(msg)}`;
+  s.className = err ? "status err" : "status loading";
   s.hidden = !msg;
   $("result").hidden = !!msg;
 }
@@ -104,6 +105,7 @@ async function main(): Promise<void> {
   project = SDK.getWebContext().project;
   restore();
 
+  status("Loading project settings…");
   const [m, teams] = await Promise.all([loadProjectMeta(project.id), loadTeams(project.id)]);
   meta = m;
 

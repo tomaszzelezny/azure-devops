@@ -7,6 +7,7 @@
  *   &settings=<json>       widget custom settings, as stored by the configuration
  *   &name=<text>           widget title
  *   &cols=4&rows=3         widget size
+ *   &delay=<ms>            every API response waits this long (shows the loader)
  *
  * Everything is exposed as window.__mock so tests can inspect calls and drive the page.
  */
@@ -23,7 +24,7 @@ if (!scenario) throw new Error(`Unknown scenario "${scenarioName}". Known: ${Obj
 
 const project = { id: "0f1e2d3c-0000-4000-8000-000000000001", name: "Demo" };
 const teamParam = params.get("team") ?? "team-a";
-const api = createMockApi(scenario, project);
+const api = createMockApi(scenario, project, Date.now(), Number(params.get("delay") ?? 0));
 
 const DARK = `:root{--background-color:#1b1a19;--callout-background-color:#252423;--text-primary-color:rgba(255,255,255,.9);--text-secondary-color:rgba(255,255,255,.6)}`;
 const LIGHT = `:root{--background-color:#ffffff;--callout-background-color:#ffffff;--text-primary-color:rgba(0,0,0,.9);--text-secondary-color:rgba(0,0,0,.55)}`;

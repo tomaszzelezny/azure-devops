@@ -23,6 +23,15 @@ test.describe("dashboard widget", () => {
     expect(await dots(page).count()).toBeGreaterThan(0);
   });
 
+  test("shows a loader until the chart is drawn", async ({ page }) => {
+    await page.goto("widget.html?delay=100");
+    await expect(page.locator("#loading")).toBeVisible();
+    await expect(page.locator("#loading .spinner")).toBeVisible();
+    await expect.poll(async () => (await mock(page)).result, { timeout: 15_000 }).toEqual({ statusType: 0 });
+    await expect(page.locator("#loading")).toBeHidden();
+    expect(await dots(page).count()).toBeGreaterThan(0);
+  });
+
   test("project dashboard (no team) queries the whole project", async ({ page }) => {
     await openWidget(page, "team=none");
     expect(await lastWiql(page)).not.toContain("System.AreaPath");
@@ -54,6 +63,7 @@ test.describe("dashboard widget", () => {
   test("failures reach the dashboard as a user-visible message", async ({ page }) => {
     await openWidget(page, "scenario=error");
     expect((await mock(page)).error).toMatchObject({ isUserVisible: true, message: expect.stringContaining("VS402337") });
+    await expect(page.locator("#loading")).toBeHidden();
   });
 
   test("redraws on theme change without new requests", async ({ page }) => {

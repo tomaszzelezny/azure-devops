@@ -86,6 +86,16 @@ button.lg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; 
 
 .status { color: var(--ink-2); padding: 24px 0; }
 .status.err { color: var(--crit); }
+.status.loading { display: flex; align-items: center; gap: 10px; }
+
+/* Loader shown while data is fetched. */
+.spinner {
+  flex: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--grid); border-top-color: var(--focus);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 
 /* ---------- hub ---------- */
 .hub { padding: 16px 20px 32px; max-width: 1400px; }
@@ -120,11 +130,17 @@ td a:hover { text-decoration: underline; }
 .tbl { overflow-x: auto; }
 
 /* ---------- widget ---------- */
-.widget { padding: 10px 14px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.widget { position: relative; padding: 10px 14px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .widget h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .widget .legend { margin-bottom: 2px; }
 .widget .chart { flex: 1; min-height: 0; }
 .widget .take { font-size: 12px; margin-top: 4px; }
+/* Covers the content below the title, so a reload does not flash a half-drawn chart. */
+.loading-overlay {
+  position: absolute; inset: 34px 0 0; z-index: 5;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  background: var(--page); color: var(--ink-2); font-size: 12px;
+}
 
 /* ---------- widget configuration ---------- */
 .config { padding: 4px 2px; display: flex; flex-direction: column; gap: 14px; }

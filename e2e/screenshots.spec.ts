@@ -25,6 +25,17 @@ for (const theme of ["light", "dark"] as const) {
     });
   }
 
+  test(`loading ${theme} @screenshot`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 400 });
+    await page.goto(`hub.html?delay=2000&theme=${theme}`);
+    await expect(page.locator("#status .spinner")).toBeVisible();
+    await page.screenshot({ path: `screenshots/hub-loading-${theme}.png` });
+    await page.setViewportSize({ width: px(4), height: px(3) });
+    await page.goto(`widget.html?delay=2000&theme=${theme}`);
+    await expect(page.locator("#loading")).toBeVisible();
+    await page.screenshot({ path: `screenshots/widget-loading-${theme}.png` });
+  });
+
   test(`config ${theme} @screenshot`, async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 620 });
     await page.goto(`config.html?theme=${theme}`);
