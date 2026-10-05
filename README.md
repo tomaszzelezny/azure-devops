@@ -16,7 +16,7 @@ Below the chart there is a one-line summary, e.g. "27 of 140 items have been in 
 
 | Part | Where | Description |
 |---|---|---|
-| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of the 50 items longest in their current state. Settings are remembered in the browser per project. |
+| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of all items, longest in their current state first. Settings are remembered in the browser per project. |
 | **Aging WIP** widget | Dashboard → Add widget | Sizes from 2×2 to 6×4. Configuration: team (defaults to the dashboard's team), types, states, threshold. |
 
 ## How the data is computed
@@ -31,6 +31,28 @@ Below the chart there is a one-line summary, e.g. "27 of 140 items have been in 
 
 Scopes: `vso.work` (read work items) and `vso.project` (list teams). The extension never writes to Azure DevOps.
 
+## Development
+
+Everything runs locally against a fake Azure DevOps host, so you don't need to upload a `.vsix` to see a change.
+
+```bash
+npm install
+npm run dev          # http://localhost:8080/ – hub, widget in every size, configuration
+npm run check        # typecheck + unit tests + Playwright e2e tests
+npm run screenshots  # every page and theme into screenshots/
+```
+
+The fake host (`dev/mock/`) replaces the Azure DevOps SDK and REST API with deterministic scenarios, picked with URL parameters:
+
+| Parameter | Values |
+|---|---|
+| `scenario` | `agile` (default), `scrum`, `no-state-change-date`, `empty`, `error` |
+| `theme` | `light`, `dark` |
+| `team` | dashboard team for the widget: `team-a`, `team-b`, `none` |
+| `settings` | widget settings JSON, e.g. `{"thresholdDays":90}` |
+
+CI (`.github/workflows/ci.yml`) runs the same checks on every pull request and attaches the `.vsix` and screenshots as artifacts.
+
 ## Build
 
 Requires Node.js 20+.
@@ -41,6 +63,16 @@ npm test            # unit tests for the calculations
 npm run build       # typecheck + bundle into dist/
 npm run package     # build + .vsix in out/
 ```
+
+## Release
+
+```bash
+npm run check
+npm run version:bump      # patch; or: npm run version:bump -- minor|major|X.Y.Z
+npm run package
+```
+
+Then upload `out/*.vsix` with **Update** in the publisher portal.
 
 ## Publish and install
 
@@ -61,6 +93,9 @@ src/core/chart.ts     SVG chart, tooltip, legend
 src/hub/hub.ts        Boards hub
 src/widget/           dashboard widget and its configuration
 static/               HTML and CSS (deck palette, light and dark theme)
+dev/mock/             fake Azure DevOps host for npm run dev and the e2e tests
+e2e/                  Playwright tests
+test/                 unit tests (calculations, manifest consistency)
 vss-extension.json    extension manifest
 ```
 

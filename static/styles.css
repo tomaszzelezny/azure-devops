@@ -53,7 +53,7 @@ body {
 .diag { stroke: var(--axis); stroke-dasharray: 3 3; }
 .base { stroke: var(--axis); }
 .thr { stroke: var(--crit); opacity: .6; }
-.thr-label { fill: var(--crit); font-weight: 600; }
+.thr-label { fill: var(--crit); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
 .dot { stroke: var(--surface); stroke-width: 1.5; }
 
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 8px; }

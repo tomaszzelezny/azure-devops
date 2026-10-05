@@ -61,7 +61,7 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img", "aria-label": "Aging WIP" }, host);
 
   const c = opts.compact;
-  const ml = c ? 40 : 58, mr = 10, mt = 10, mb = c ? 30 : 38;
+  const ml = c ? 48 : 58, mr = 10, mt = 10, mb = c ? 30 : 38;
   const fs = c ? 10 : 11;
   const color = new Map(series.map((s) => [s.name, `var(--c${s.color})`]));
   const P = points.filter((p) => color.has(p.item.state));
@@ -81,7 +81,7 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   el("text", { x: (ml + W - mr) / 2, y: H - 3, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
     .textContent = "age (days since in progress)";
   const cy = (mt + H - mb) / 2;
-  el("text", { x: 10, y: cy, transform: `rotate(-90 10 ${cy})`, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
+  el("text", { x: 9, y: cy, transform: `rotate(-90 9 ${cy})`, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
     .textContent = "days in current state";
 
   el("line", { x1: x(0), y1: y(0), x2: x(m), y2: y(m), class: "diag" }, svg);
