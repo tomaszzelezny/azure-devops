@@ -72,11 +72,16 @@ export function statesOf(types: string[], meta: ProjectMeta): StateMeta[] {
   return [...seen.values()];
 }
 
+/** The only states the chart offers: InProgress and Resolved categories, in workflow order. */
+export function wipStatesOf(types: string[], meta: ProjectMeta): string[] {
+  return statesOf(types, meta).filter((s) => WIP_CATEGORIES.includes(s.category)).map((s) => s.name);
+}
+
 export function effectiveStates(settings: AgingSettings, meta: ProjectMeta): string[] {
-  const all = statesOf(effectiveTypes(settings, meta), meta);
-  const known = new Set(all.map((s) => s.name));
-  const picked = settings.states.filter((s) => known.has(s));
-  return picked.length ? picked : all.filter((s) => WIP_CATEGORIES.includes(s.category)).map((s) => s.name);
+  const all = wipStatesOf(effectiveTypes(settings, meta), meta);
+  // Saved selections may name states from other categories (older versions offered them); drop those.
+  const picked = settings.states.filter((s) => all.includes(s));
+  return picked.length ? picked : all;
 }
 
 /** One series per selected state, coloured in workflow order so colours stay stable across refreshes. */

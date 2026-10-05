@@ -16,7 +16,7 @@ Below the chart there is a one-line summary, e.g. "27 of 140 items have been in 
 
 | Part | Where | Description |
 |---|---|---|
-| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states and threshold; legend with counts (click to hide a state); table of the 50 items longest in their current state. Settings are remembered in the browser per project. |
+| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of the 50 items longest in their current state. Settings are remembered in the browser per project. |
 | **Aging WIP** widget | Dashboard → Add widget | Sizes from 2×2 to 6×4. Configuration: team (defaults to the dashboard's team), types, states, threshold. |
 
 ## How the data is computed

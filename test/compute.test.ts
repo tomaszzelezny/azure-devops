@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  effectiveStates, effectiveTypes, escapeWiql, niceMax, scanHistory, seriesFor, startStates, summary, takeaway, ticks, toPoints,
+  effectiveStates, effectiveTypes, escapeWiql, niceMax, scanHistory, seriesFor, startStates, wipStatesOf, summary, takeaway, ticks, toPoints,
 } from "../src/core/compute.ts";
 import { DEFAULT_SETTINGS, type ProjectMeta, type WipItem } from "../src/core/types.ts";
 
@@ -28,6 +28,12 @@ test("explicit settings win, unknown names are ignored", () => {
   const s = { ...DEFAULT_SETTINGS, types: ["Task", "Epic"], states: ["Active", "Gone"] };
   assert.deepEqual(effectiveTypes(s, meta), ["Task"]);
   assert.deepEqual(effectiveStates(s, meta), ["Active"]);
+});
+
+test("only InProgress and Resolved states are offered; saved states from other categories are dropped", () => {
+  assert.deepEqual(wipStatesOf(["User Story", "Bug"], meta), ["Active", "OnHold", "Resolved"]);
+  assert.deepEqual(effectiveStates({ ...DEFAULT_SETTINGS, states: ["New", "Closed", "OnHold"] }, meta), ["OnHold"]);
+  assert.deepEqual(effectiveStates({ ...DEFAULT_SETTINGS, states: ["New"] }, meta), ["Active", "OnHold", "Resolved"]);
 });
 
 test("points measure age since work started and time in the current state", () => {

@@ -1,9 +1,9 @@
 import * as SDK from "azure-devops-extension-sdk";
 import { esc } from "../core/chart.ts";
-import { effectiveStates, effectiveTypes, statesOf } from "../core/compute.ts";
+import { effectiveStates, effectiveTypes, wipStatesOf } from "../core/compute.ts";
 import { loadProjectMeta, loadTeams } from "../core/data.ts";
 import { watchTheme } from "../core/theme.ts";
-import { checkboxes, openStateFilter } from "../core/ui.ts";
+import { checkboxes } from "../core/ui.ts";
 import type { ProjectMeta } from "../core/types.ts";
 import {
   CONFIGURATION_CHANGE, parseSettings, WidgetStatusType,
@@ -30,7 +30,7 @@ function renderLists(): void {
     settings = { ...settings, types: next, states: [] };
     renderLists(); changed();
   });
-  const names = statesOf(types, meta).filter(openStateFilter).map((s) => s.name);
+  const names = wipStatesOf(types, meta);
   checkboxes($("states"), names, effectiveStates(full, meta), (next) => {
     settings = { ...settings, states: next };
     renderLists(); changed();

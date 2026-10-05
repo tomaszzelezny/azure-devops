@@ -1,12 +1,12 @@
 import * as SDK from "azure-devops-extension-sdk";
 import { renderAgingChart, renderLegend, esc } from "../core/chart.ts";
 import {
-  effectiveStates, effectiveTypes, seriesFor, statesOf, takeaway, toPoints, type AgingPoint,
+  effectiveStates, effectiveTypes, seriesFor, wipStatesOf, takeaway, toPoints, type AgingPoint,
 } from "../core/compute.ts";
 import { loadProjectMeta, loadTeams, loadWipItems } from "../core/data.ts";
 import { openWorkItem } from "../core/navigation.ts";
 import { watchTheme } from "../core/theme.ts";
-import { checkboxes, openStateFilter } from "../core/ui.ts";
+import { checkboxes } from "../core/ui.ts";
 import { DEFAULT_SETTINGS, type AgingSettings, type ProjectMeta, type WipItem } from "../core/types.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -38,7 +38,7 @@ function renderControls(): void {
     settings = { ...settings, types: next, states: [] };
     persist(); renderControls(); void reload();
   });
-  const stateNames = statesOf(types, meta).filter(openStateFilter).map((s) => s.name);
+  const stateNames = wipStatesOf(types, meta);
   checkboxes($("states"), stateNames, effectiveStates(settings, meta), (next) => {
     settings = { ...settings, states: next };
     persist(); renderControls(); void reload();

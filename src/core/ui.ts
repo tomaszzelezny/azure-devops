@@ -16,6 +16,3 @@ export function checkboxes(host: HTMLElement, names: string[], checked: string[]
     host.appendChild(label);
   }
 }
-
-/** States worth plotting: everything except the finished ones. */
-export const openStateFilter = (s: { category: string }) => s.category !== "Completed" && s.category !== "Removed";
