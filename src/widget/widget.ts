@@ -35,7 +35,7 @@ async function render(ws: WidgetSettings): Promise<WidgetStatus> {
     const settings = { ...stored, teamId };
     const meta = await loadProjectMeta(ctx.project.id);
     const states = effectiveStates(settings, meta);
-    const items = await loadWipItems(ctx.project.id, teamId, effectiveTypes(settings, meta), states);
+    const items = await loadWipItems(ctx.project.id, teamId, effectiveTypes(settings, meta), states, meta);
     last = { points: toPoints(items, new Date()), states, threshold: settings.thresholdDays };
     draw();
     return { statusType: WidgetStatusType.Success };

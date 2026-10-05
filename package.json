@@ -1,6 +1,6 @@
 {
   "name": "aging-wip-azure-devops",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Aging WIP chart for Azure DevOps Boards (hub + dashboard widget)",
   "license": "Apache-2.0",

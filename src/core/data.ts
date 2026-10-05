@@ -1,5 +1,5 @@
 import { get, post, seg } from "./ado.ts";
-import { escapeWiql } from "./compute.ts";
+import { escapeWiql, scanHistory, startStates, type StateUpdate } from "./compute.ts";
 import type { ProjectMeta, Team, TypeMeta, WipItem } from "./types.ts";
 
 interface List<T> { value: T[]; count?: number }
@@ -23,6 +23,9 @@ interface ApiWorkItem {
 interface ApiUpdate {
   fields?: Record<string, { newValue?: unknown }>;
 }
+
+/** Page size for the work item updates API (its maximum). */
+const PAGE = 200;
 
 const FIELDS = [
   "System.Id",
@@ -67,7 +70,10 @@ async function teamClause(project: string, teamId: string): Promise<string> {
   return ` AND (${parts.join(" OR ")})`;
 }
 
-export async function loadWipItems(project: string, teamId: string, types: string[], states: string[]): Promise<WipItem[]> {
+export async function loadWipItems(
+  project: string, teamId: string, types: string[], states: string[], meta: ProjectMeta,
+  onProgress?: (done: number, total: number) => void,
+): Promise<WipItem[]> {
   if (!types.length || !states.length) return [];
   const query =
     "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project" +
@@ -83,7 +89,7 @@ export async function loadWipItems(project: string, teamId: string, types: strin
   }
   const raw = (await Promise.all(batches)).flatMap((b) => b.value);
   const items = raw.map(toItem);
-  await fillMissingStateChange(items);
+  await fillHistory(items, startStates(meta), onProgress);
   return items;
 }
 
@@ -99,21 +105,38 @@ function toItem(w: ApiWorkItem): WipItem {
     state: String(f["System.State"] ?? ""),
     assignedTo: typeof assigned === "string" ? assigned : assigned?.displayName ?? "",
     createdDate: created,
-    // NaN marks "unknown" until fillMissingStateChange resolves it.
+    startedDate: created, // replaced by fillHistory
+    // NaN marks "unknown" until fillHistory resolves it.
     stateChangeDate: changed ? new Date(changed) : new Date(NaN),
   };
 }
 
-/** Processes without StateChangeDate: read the last state change from the item's update history. */
-async function fillMissingStateChange(items: WipItem[]): Promise<void> {
-  const todo = items.filter((i) => isNaN(i.stateChangeDate.getTime()));
+/**
+ * Fill startedDate (and stateChangeDate where the process lacks that field) from each item's update history.
+ * One request per item in the common case: the start is usually on the first page of updates.
+ */
+async function fillHistory(items: WipItem[], started: Map<string, Set<string>>, onProgress?: (done: number, total: number) => void): Promise<void> {
+  const todo = [...items];
+  let done = 0;
   const worker = async () => {
     for (let it = todo.pop(); it; it = todo.pop()) {
-      const updates = await get<List<ApiUpdate>>(`_apis/wit/workItems/${it.id}/updates?$top=1000`);
-      const last = updates.value.filter((u) => u.fields?.["System.State"]).pop();
-      const when = last?.fields?.["System.ChangedDate"]?.newValue as string | undefined;
-      it.stateChangeDate = when ? new Date(when) : it.createdDate;
+      const needLast = isNaN(it.stateChangeDate.getTime());
+      const starts = started.get(it.type) ?? new Set<string>();
+      const history: StateUpdate[] = [];
+      for (let skip = 0; ; skip += PAGE) {
+        const page = await get<List<ApiUpdate>>(`_apis/wit/workItems/${it.id}/updates?$top=${PAGE}&$skip=${skip}`);
+        for (const u of page.value) {
+          history.push({ state: u.fields?.["System.State"]?.newValue as string | undefined, date: u.fields?.["System.ChangedDate"]?.newValue as string | undefined });
+        }
+        if (page.value.length < PAGE || (!needLast && scanHistory(history, starts).firstStart)) break;
+      }
+      const { firstStart, lastChange } = scanHistory(history, starts);
+      if (needLast) it.stateChangeDate = lastChange ?? it.createdDate;
+      // Without a recorded start (e.g. renamed states), fall back to entering the current state.
+      const start = firstStart ?? it.stateChangeDate;
+      it.startedDate = start < it.stateChangeDate ? start : it.stateChangeDate;
+      onProgress?.(++done, items.length);
     }
   };
-  await Promise.all(Array.from({ length: 6 }, worker));
+  await Promise.all(Array.from({ length: 8 }, worker));
 }

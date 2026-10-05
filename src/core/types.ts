@@ -48,6 +48,8 @@ export interface WipItem {
   state: string;
   assignedTo: string;
   createdDate: Date;
+  /** When work started: first entry into an InProgress or Resolved state. */
+  startedDate: Date;
   /** When the item entered its current state. */
   stateChangeDate: Date;
 }

@@ -50,8 +50,8 @@ function showTip(ev: MouseEvent, html: string) {
 const hideTip = () => { if (tip) tip.hidden = true; };
 
 /**
- * Aging WIP scatter: x = age since creation, y = days in the current state.
- * Dots on the diagonal have not changed state since they were created.
+ * Aging WIP scatter: x = age since work started, y = days in the current state.
+ * Dots on the diagonal have not changed state since work started.
  */
 export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series: StateSeries[], opts: ChartOptions): void {
   host.innerHTML = "";
@@ -79,7 +79,7 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
     el("text", { x: x(v), y: H - mb + 15, "text-anchor": "middle" }, ax).textContent = fmt(v);
   }
   el("text", { x: (ml + W - mr) / 2, y: H - 3, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
-    .textContent = "age (days since created)";
+    .textContent = "age (days since in progress)";
   const cy = (mt + H - mb) / 2;
   el("text", { x: 10, y: cy, transform: `rotate(-90 10 ${cy})`, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
     .textContent = "days in current state";

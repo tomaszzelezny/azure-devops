@@ -6,7 +6,7 @@ export const WIP_CATEGORIES = ["InProgress", "Resolved"];
 
 export interface AgingPoint {
   item: WipItem;
-  /** Days since the item was created. */
+  /** Days since work on the item started. */
   age: number;
   /** Days since the item entered its current state. */
   inState: number;
@@ -26,9 +26,34 @@ export function daysBetween(from: Date, to: Date): number {
 export function toPoints(items: WipItem[], now: Date): AgingPoint[] {
   return items.map((item) => ({
     item,
-    age: daysBetween(item.createdDate, now),
+    age: daysBetween(item.startedDate, now),
     inState: daysBetween(item.stateChangeDate, now),
   }));
+}
+
+/** Per work item type, the states that count as "work started" (InProgress and Resolved categories). */
+export function startStates(meta: ProjectMeta): Map<string, Set<string>> {
+  return new Map(meta.types.map((t) => [t.name, new Set(t.states.filter((s) => WIP_CATEGORIES.includes(s.category)).map((s) => s.name))]));
+}
+
+/** One entry of a work item's update history, reduced to what we need. */
+export interface StateUpdate {
+  /** New value of System.State, when this update changed the state. */
+  state?: string;
+  /** System.ChangedDate of the update. */
+  date?: string;
+}
+
+/** First time the item entered a started state, and the last state change, from its history (oldest first). */
+export function scanHistory(updates: StateUpdate[], started: Set<string>): { firstStart?: Date; lastChange?: Date } {
+  let firstStart: Date | undefined, lastChange: Date | undefined;
+  for (const u of updates) {
+    if (!u.state || !u.date) continue;
+    const d = new Date(u.date);
+    if (!firstStart && started.has(u.state)) firstStart = d;
+    lastChange = d;
+  }
+  return { firstStart, lastChange };
 }
 
 export function effectiveTypes(settings: AgingSettings, meta: ProjectMeta): string[] {

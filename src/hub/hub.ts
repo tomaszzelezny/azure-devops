@@ -58,7 +58,8 @@ async function reload(): Promise<void> {
   const seq = ++loadSeq;
   status("Loading work items…");
   try {
-    const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta));
+    const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta), meta,
+      (done, total) => { if (seq === loadSeq) status(`Reading work item history… ${done} / ${total}`); });
     if (seq !== loadSeq) return; // a newer request superseded this one
     items = got;
     status("");
