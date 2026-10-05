@@ -1,0 +1,23 @@
+{
+  "name": "aging-wip-azure-devops",
+  "version": "0.1.2",
+  "private": true,
+  "description": "Aging WIP chart for Azure DevOps Boards (hub + dashboard widget)",
+  "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && node build.mjs",
+    "watch": "node build.mjs --watch",
+    "test": "node --test --experimental-strip-types test/*.test.ts",
+    "package": "npm run build && tfx extension create --manifest-globs vss-extension.json --output-path out",
+    "package:dev": "npm run build && tfx extension create --manifest-globs vss-extension.json --overrides-file overrides.dev.json --output-path out"
+  },
+  "dependencies": {
+    "azure-devops-extension-sdk": "^4.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "tfx-cli": "^0.24.2",
+    "typescript": "5.9"
+  }
+}
