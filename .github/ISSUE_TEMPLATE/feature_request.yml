@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest a change or a new option for the chart, hub or widget.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The question you want the chart to answer, or the situation where it falls short.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would help?
+      description: How you imagine it working. Sketches and screenshots of similar charts are welcome.
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
