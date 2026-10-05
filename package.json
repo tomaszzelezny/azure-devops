@@ -5,10 +5,16 @@
   "description": "Aging WIP chart for Azure DevOps Boards (hub + dashboard widget)",
   "license": "Apache-2.0",
   "scripts": {
+    "dev": "node build.mjs --mock --serve",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && node build.mjs",
+    "build:mock": "node build.mjs --mock",
     "watch": "node build.mjs --watch",
     "test": "node --test --experimental-strip-types test/*.test.ts",
+    "test:e2e": "playwright test --project=e2e",
+    "screenshots": "playwright test --project=screenshots",
+    "check": "npm run typecheck && npm test && npm run test:e2e",
+    "version:bump": "node scripts/bump-version.mjs",
     "package": "npm run build && tfx extension create --manifest-globs vss-extension.json --output-path out",
     "package:dev": "npm run build && tfx extension create --manifest-globs vss-extension.json --overrides-file overrides.dev.json --output-path out"
   },
@@ -16,6 +22,7 @@
     "azure-devops-extension-sdk": "^4.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.56.1",
     "esbuild": "^0.28.2",
     "tfx-cli": "^0.24.2",
     "typescript": "5.9"

@@ -31,7 +31,6 @@ function persist(): void {
   try { localStorage.setItem(storeKey(), JSON.stringify(settings)); } catch { /* ignore */ }
 }
 
-
 function renderControls(): void {
   const types = effectiveTypes(settings, meta);
   checkboxes($("types"), meta.types.map((t) => t.name), types, (next) => {
@@ -87,9 +86,9 @@ function draw(): void {
 }
 
 function renderTable(points: AgingPoint[]): void {
-  const top = [...points].sort((a, b) => b.inState - a.inState).slice(0, 50);
+  const top = [...points].sort((a, b) => b.inState - a.inState);
   const n = (v: number) => Math.round(v).toLocaleString();
-  $("tableTitle").textContent = `Longest in current state (${top.length} of ${points.length})`;
+  $("tableTitle").textContent = `All items, longest in current state first (${points.length})`;
   $("table").innerHTML =
     `<table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>State</th>` +
     `<th class="num">In state (days)</th><th class="num">Age (days)</th><th>Assigned to</th></tr></thead><tbody>` +

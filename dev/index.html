@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aging WIP – dev harness</title>
+  <style>
+    :root { color-scheme: light dark; font: 14px "Segoe UI", system-ui, sans-serif; }
+    body { margin: 0; padding: 16px 20px 40px; background: #f3f2f1; color: #201f1e; }
+    @media (prefers-color-scheme: dark) { body { background: #11100f; color: #f3f2f1; } }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    p { margin: 0 0 12px; opacity: .75; }
+    form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 16px; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+    select, input { font: inherit; padding: 4px 6px; }
+    h2 { font-size: 13px; font-weight: 600; margin: 20px 0 6px; }
+    .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+    iframe { border: 1px solid #c8c6c4; border-radius: 4px; background: white; display: block; }
+    figcaption { font-size: 12px; opacity: .7; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Aging WIP – dev harness</h1>
+  <p>Production code against a fake Azure DevOps host (<code>dev/mock</code>). Pages reload when you change the source.</p>
+  <form id="f">
+    <label>Scenario <select name="scenario">
+      <option>agile</option><option>scrum</option><option>no-state-change-date</option><option>empty</option><option>error</option>
+    </select></label>
+    <label>Theme <select name="theme"><option>light</option><option>dark</option></select></label>
+    <label>Dashboard team <select name="team">
+      <option value="team-a">Team A</option><option value="team-b">Team B</option><option value="none">none (project dashboard)</option>
+    </select></label>
+    <label>Widget settings (JSON) <input name="settings" size="40" placeholder='{"thresholdDays":90}'></label>
+  </form>
+
+  <h2>Hub (Boards → Aging WIP)</h2>
+  <iframe data-page="hub.html" width="1200" height="900"></iframe>
+
+  <h2>Dashboard widget, every supported size (160 px cells, 10 px gutter)</h2>
+  <div class="row" id="widgets"></div>
+
+  <h2>Widget configuration</h2>
+  <iframe data-page="config.html" width="360" height="620"></iframe>
+
+  <script>
+    const sizes = [[2, 2], [3, 2], [3, 3], [4, 3], [4, 4], [6, 4]];
+    const px = (n) => 160 * n + 10 * (n - 1);
+    const row = document.getElementById("widgets");
+    for (const [c, r] of sizes) {
+      const fig = document.createElement("figure");
+      fig.style.margin = "0";
+      fig.innerHTML = `<figcaption>${c}×${r}</figcaption><iframe data-page="widget.html" data-cols="${c}" data-rows="${r}" width="${px(c)}" height="${px(r)}"></iframe>`;
+      row.appendChild(fig);
+    }
+    const form = document.getElementById("f");
+    const saved = new URLSearchParams(location.search);
+    for (const el of form.elements) if (saved.has(el.name)) el.value = saved.get(el.name);
+    function apply() {
+      const q = new URLSearchParams();
+      for (const el of form.elements) if (el.value) q.set(el.name, el.value);
+      history.replaceState(null, "", "?" + q);
+      for (const f of document.querySelectorAll("iframe")) {
+        const p = new URLSearchParams(q);
+        if (f.dataset.cols) { p.set("cols", f.dataset.cols); p.set("rows", f.dataset.rows); }
+        f.src = `${f.dataset.page}?${p}`;
+      }
+    }
+    form.addEventListener("change", apply);
+    apply();
+    // esbuild live reload
+    new EventSource("/esbuild").addEventListener("change", () => apply());
+  </script>
+</body>
+</html>

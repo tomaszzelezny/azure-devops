@@ -62,10 +62,16 @@ export function effectiveTypes(settings: AgingSettings, meta: ProjectMeta): stri
   return picked.length ? picked : meta.defaultTypes.filter((t) => known.has(t));
 }
 
-/** States of the given types in workflow order, de-duplicated by name. */
+/**
+ * States of the given types in workflow order, de-duplicated by name.
+ * The default types (Requirement, then Bug) go first whatever order the types were picked in,
+ * so the state order, and with it the colours, stays the same when another type is added.
+ */
 export function statesOf(types: string[], meta: ProjectMeta): StateMeta[] {
+  const rank = (t: string) => { const i = meta.defaultTypes.indexOf(t); return i < 0 ? meta.defaultTypes.length : i; };
+  const ordered = [...types].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
   const seen = new Map<string, StateMeta>();
-  for (const name of types) {
+  for (const name of ordered) {
     const t = meta.types.find((x) => x.name === name);
     for (const s of t?.states ?? []) if (!seen.has(s.name)) seen.set(s.name, s);
   }

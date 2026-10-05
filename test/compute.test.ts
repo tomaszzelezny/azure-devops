@@ -55,6 +55,11 @@ test("summary and takeaway", () => {
   assert.deepEqual(seriesFor(["Active", "OnHold"], pts).map((s) => [s.name, s.color, s.count]), [["Active", 0, 2], ["OnHold", 1, 1]]);
 });
 
+test("state order does not depend on the order types were picked in", () => {
+  assert.deepEqual(wipStatesOf(["Bug", "Task", "User Story"], meta), ["Active", "OnHold", "Resolved"]);
+  assert.deepEqual(wipStatesOf(["Task", "Bug"], meta), ["Active", "Resolved"]);
+});
+
 test("start states are the InProgress and Resolved states of each type", () => {
   const s = startStates(meta);
   assert.deepEqual([...s.get("User Story")!], ["Active", "OnHold", "Resolved"]);
