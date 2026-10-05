@@ -6,11 +6,28 @@
   "name": "Aging WIP",
   "description": "Aging WIP chart for Azure Boards: how old every open work item is and how long it has been in its current state.",
   "public": false,
+  "galleryFlags": ["Preview"],
   "categories": ["Azure Boards"],
   "tags": ["aging", "wip", "flow", "kanban", "metrics"],
   "targets": [{ "id": "Microsoft.VisualStudio.Services" }],
   "icons": { "default": "img/logo.png" },
-  "content": { "details": { "path": "overview.md" } },
+  "content": {
+    "details": { "path": "overview.md" },
+    "license": { "path": "LICENSE" }
+  },
+  "screenshots": [
+    { "path": "img/screenshots/hub.png" },
+    { "path": "img/screenshots/widget.png" },
+    { "path": "img/screenshots/hub-dark.png" }
+  ],
+  "repository": { "type": "git", "uri": "https://github.com/tomaszzelezny/azure-devops" },
+  "links": {
+    "getstarted": { "uri": "https://github.com/tomaszzelezny/azure-devops#readme" },
+    "support": { "uri": "https://github.com/tomaszzelezny/azure-devops/issues" },
+    "license": { "uri": "https://github.com/tomaszzelezny/azure-devops/blob/main/LICENSE" },
+    "privacypolicy": { "uri": "https://github.com/tomaszzelezny/azure-devops/blob/main/PRIVACY.md" }
+  },
+  "CustomerQnASupport": { "enableqna": true, "url": "https://github.com/tomaszzelezny/azure-devops/issues" },
   "scopes": ["vso.work", "vso.project"],
   "files": [
     { "path": "dist", "addressable": true },

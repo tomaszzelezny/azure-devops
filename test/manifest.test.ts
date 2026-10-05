@@ -24,7 +24,7 @@ test("every contribution page exists and loads a bundle the build produces", () 
 });
 
 test("images referenced by the manifest exist", () => {
-  const paths = [manifest.icons.default, manifest.content.details.path];
+  const paths = [manifest.icons.default, manifest.content.details.path, manifest.content.license.path, ...manifest.screenshots.map((s: any) => s.path)];
   for (const c of manifest.contributions) for (const k of ["catalogIconUrl", "previewImageUrl"]) if (c.properties[k]) paths.push(c.properties[k]);
   for (const p of paths) assert.ok(existsSync(p), p);
 });
@@ -45,4 +45,12 @@ test("objects registered with the SDK use the manifest's contribution ids", () =
 
 test("scopes cover the REST calls (work items, teams)", () => {
   assert.deepEqual([...manifest.scopes].sort(), ["vso.project", "vso.work"]);
+});
+
+test("images in the overview exist and are packaged", () => {
+  const overview = readFileSync(manifest.content.details.path, "utf8");
+  for (const [, p] of overview.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
+    assert.ok(existsSync(p), p);
+    assert.ok(manifest.files.some((f: any) => p.startsWith(f.path + "/")), `${p} is under a packaged folder`);
+  }
 });

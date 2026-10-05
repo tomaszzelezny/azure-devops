@@ -16,6 +16,7 @@
     "check": "npm run typecheck && npm test && npm run test:e2e",
     "version:bump": "node scripts/bump-version.mjs",
     "package": "npm run build && tfx extension create --manifest-globs vss-extension.json --output-path out",
+    "package:public": "npm run build && tfx extension create --manifest-globs vss-extension.json --overrides-file overrides.public.json --output-path out",
     "package:dev": "npm run build && tfx extension create --manifest-globs vss-extension.json --overrides-file overrides.dev.json --output-path out"
   },
   "dependencies": {

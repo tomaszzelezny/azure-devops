@@ -84,6 +84,15 @@ Then upload `out/*.vsix` with **Update** in the publisher portal.
 
 To test alongside the production version: `npm run package:dev` builds a separate `aging-wip-dev` extension.
 
+### Public listing
+
+Only a **verified** publisher can list a public extension. Once the publisher is verified (publisher portal → **Details** → verify a domain you own):
+
+1. `npm run package:public` builds the same extension with `"public": true` (from `overrides.public.json`). It keeps the `Preview` gallery flag; drop it from `vss-extension.json` once the extension is stable.
+2. Upload the `.vsix` with **Update** on the existing extension. Organizations it was shared with keep it installed.
+
+The listing uses `overview.md` as its description, `img/screenshots/` for the screenshots (regenerate with `npm run screenshots` and copy the ones you want), `LICENSE`, and [PRIVACY.md](PRIVACY.md) as the privacy policy. When the publisher is verified for good, set `"public": true` in `vss-extension.json` and stop using the override.
+
 ## Layout
 
 ```
