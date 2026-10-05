@@ -1,6 +1,6 @@
 # Aging WIP for Azure DevOps
 
-An Azure DevOps extension that adds an **Aging WIP** chart to Azure Boards, based on the Aging WIP slide of the "Azure DevOps + AI" deck.
+An Azure DevOps extension that adds an **Aging WIP** chart to Azure Boards.
 
 Each dot is an open work item:
 
@@ -30,6 +30,12 @@ Below the chart there is a one-line summary, e.g. "27 of 140 items have been in 
 5. If the process has no `StateChangeDate`, the last state change is read from the same history.
 
 Scopes: `vso.work` (read work items) and `vso.project` (list teams). The extension never writes to Azure DevOps.
+
+## Reporting issues
+
+Found a bug or missing something? [Open an issue](https://github.com/tomaszzelezny/azure-devops/issues/new/choose) and pick **Bug report** or **Feature request**. For bugs, include the extension version (Organization settings → Extensions), your process (Agile, Scrum, CMMI, Basic or inherited) and any errors from the browser console. Please don't paste work item data you can't share publicly.
+
+Security problems: report them privately, see [SECURITY.md](SECURITY.md). Pull requests are welcome too, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Development
 
@@ -103,7 +109,7 @@ src/core/data.ts      data loading from the Azure DevOps REST API
 src/core/chart.ts     SVG chart, tooltip, legend
 src/hub/hub.ts        Boards hub
 src/widget/           dashboard widget and its configuration
-static/               HTML and CSS (deck palette, light and dark theme)
+static/               HTML and CSS (light and dark theme)
 dev/mock/             fake Azure DevOps host for npm run dev and the e2e tests
 e2e/                  Playwright tests
 test/                 unit tests (calculations, manifest consistency)
