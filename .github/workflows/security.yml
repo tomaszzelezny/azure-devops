@@ -1,0 +1,57 @@
+name: Security
+
+# Trivy scan of the repository: known vulnerabilities in package-lock.json
+# (dev dependencies included, they run in CI), committed secrets and config
+# misconfigurations. Every finding goes to the Security tab (code scanning);
+# the job fails only on HIGH/CRITICAL findings that have a fix available.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays: catches new advisories for unchanged code
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    env:
+      TRIVY_INCLUDE_DEV_DEPS: 'true'
+    # Actions are pinned to commit SHAs: trivy-action's tags were hijacked in
+    # March 2026 (CVE-2026-33634); 0.35.0+ are immutable releases.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Scan (report)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          skip-dirs: .cache # the action keeps its vulnerability DB there
+          format: sarif
+          output: trivy-results.sarif
+      - name: Upload to code scanning
+        # Pull requests from forks get a read-only token and cannot upload.
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+      - name: Fail on fixable HIGH/CRITICAL findings
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          skip-dirs: .cache # the action keeps its vulnerability DB there
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+          skip-setup-trivy: true

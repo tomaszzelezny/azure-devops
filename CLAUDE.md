@@ -29,3 +29,4 @@ UI text is English. Conversation with the owner is usually in Polish.
 - Behaviour visible to users gets an e2e test; exact numbers come from the anchor items (ids 1001+) in `dev/mock/scenarios.ts`, never from the seeded filler.
 - Changing the contribution ids, page names or bundle names: `test/manifest.test.ts` checks they line up.
 - Release: `npm run check`, `npm run version:bump`, `npm run package`, upload the `.vsix` with **Update** in the Marketplace publisher portal. The Package workflow runs on every merge to main (and on demand); it bumps the patch (when the current version is already tagged), commits, tags, builds and attaches the `.vsix` to a GitHub Release.
+- Security: the Security workflow runs Trivy (dependencies incl. dev, secrets, misconfig) on PRs, main and weekly; results land in the GitHub Security tab, the job fails on fixable HIGH/CRITICAL. Pin third-party actions there to commit SHAs (trivy-action tags were hijacked in March 2026).
