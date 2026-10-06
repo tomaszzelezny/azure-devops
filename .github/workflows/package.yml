@@ -2,7 +2,10 @@ name: Package
 
 # Every run builds a new version: the first run of a version tags it (v1.1.3),
 # later runs bump the patch number, commit it to the branch and tag it.
+# Runs on every merge to main (public build) and on demand.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       visibility:
@@ -20,10 +23,16 @@ concurrency:
 
 jobs:
   package:
+    # The workflow's own "Release vX.Y.Z" commit must not start another release.
+    if: github.actor != 'github-actions[bot]' && !startsWith(github.event.head_commit.message, 'Release v')
     runs-on: ubuntu-latest
+    env:
+      VISIBILITY: ${{ inputs.visibility || 'public' }}
     steps:
       - uses: actions/checkout@v4
         with:
+          # Latest tip of the branch, so a queued run sees the previous run's release commit.
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
@@ -41,9 +50,9 @@ jobs:
           fi
           echo "version=$(node -p 'require("./vss-extension.json").version')" >> "$GITHUB_OUTPUT"
       - run: npm run package:public
-        if: inputs.visibility == 'public'
+        if: env.VISIBILITY == 'public'
       - run: npm run package
-        if: inputs.visibility == 'private'
+        if: env.VISIBILITY == 'private'
       - name: Commit and tag the version
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -51,12 +60,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if ! git diff --quiet; then
-            git commit -am "Release v$VERSION"
+            git commit -am "Release v$VERSION [skip ci]"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
           git tag "v$VERSION"
           git push origin "v$VERSION"
       - uses: actions/upload-artifact@v4
         with:
-          name: vsix-${{ inputs.visibility }}-${{ steps.version.outputs.version }}
+          name: vsix-${{ env.VISIBILITY }}-${{ steps.version.outputs.version }}
           path: out/*.vsix

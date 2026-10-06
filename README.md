@@ -80,7 +80,7 @@ npm run package
 
 Then upload `out/*.vsix` with **Update** in the publisher portal.
 
-Or from GitHub: **Actions → Package → Run workflow**. Each run releases a new version: if the current version already has a `vX.Y.Z` tag, the workflow bumps the patch number and commits it, then builds the `.vsix`, tags the version and attaches the file as the `vsix-public-X.Y.Z` (or `vsix-private-X.Y.Z`) artifact. For a minor or major bump, run `npm run version:bump -- minor` and merge it first.
+Or from GitHub: the **Package** workflow runs on every merge to `main` (public build) and on demand from **Actions → Package → Run workflow**. Each run releases a new version: if the current version already has a `vX.Y.Z` tag, the workflow bumps the patch number and commits it, then builds the `.vsix`, tags the version and attaches the file as the `vsix-public-X.Y.Z` (or `vsix-private-X.Y.Z`) artifact. For a minor or major bump, merge `npm run version:bump -- minor` (the merge itself releases that version). The workflow's own `Release vX.Y.Z [skip ci]` commit does not trigger another release.
 
 ## Publish and install
 
