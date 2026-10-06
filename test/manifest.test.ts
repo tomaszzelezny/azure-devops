@@ -50,6 +50,7 @@ test("scopes cover the REST calls (work items, teams)", () => {
 test("images in the overview exist and are packaged", () => {
   const overview = readFileSync(manifest.content.details.path, "utf8");
   for (const [, p] of overview.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
+    if (/^https:\/\//.test(p)) continue; // external badges
     assert.ok(existsSync(p), p);
     assert.ok(manifest.files.some((f: any) => p.startsWith(f.path + "/")), `${p} is under a packaged folder`);
   }
