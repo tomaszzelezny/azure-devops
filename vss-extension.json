@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "aging-wip",
   "publisher": "TomaszZelezny",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "name": "Aging WIP",
   "description": "Aging WIP chart for Azure Boards: how old every open work item is and how long it has been in its current state.",
   "public": false,
