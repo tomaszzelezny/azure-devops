@@ -28,4 +28,4 @@ UI text is English. Conversation with the owner is usually in Polish.
 - States offered by the UI are only those in the InProgress and Resolved categories (`wipStatesOf`). Work start = first entry into such a state, from item history.
 - Behaviour visible to users gets an e2e test; exact numbers come from the anchor items (ids 1001+) in `dev/mock/scenarios.ts`, never from the seeded filler.
 - Changing the contribution ids, page names or bundle names: `test/manifest.test.ts` checks they line up.
-- Release: `npm run check`, `npm run version:bump`, `npm run package`, upload the `.vsix` with **Update** in the Marketplace publisher portal. The Package workflow runs on every merge to main (and on demand); it bumps the patch (when the current version is already tagged), commits, tags and builds.
+- Release: `npm run check`, `npm run version:bump`, `npm run package`, upload the `.vsix` with **Update** in the Marketplace publisher portal. The Package workflow runs on every merge to main (and on demand); it bumps the patch (when the current version is already tagged), commits, tags, builds and attaches the `.vsix` to a GitHub Release.

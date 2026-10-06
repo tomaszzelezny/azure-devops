@@ -65,7 +65,12 @@ jobs:
           fi
           git tag "v$VERSION"
           git push origin "v$VERSION"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: vsix-${{ env.VISIBILITY }}-${{ steps.version.outputs.version }}
-          path: out/*.vsix
+      # A GitHub Release keeps the .vsix as a plain file (workflow artifacts are always zipped).
+      - name: Publish the .vsix as a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          flags=()
+          [ "$VISIBILITY" = private ] && flags+=(--prerelease)
+          gh release create "v$VERSION" out/*.vsix --title "v$VERSION ($VISIBILITY)" --generate-notes "${flags[@]}"

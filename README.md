@@ -80,7 +80,7 @@ npm run package
 
 Then upload `out/*.vsix` with **Update** in the publisher portal.
 
-Or from GitHub: the **Package** workflow runs on every merge to `main` (public build) and on demand from **Actions → Package → Run workflow**. Each run releases a new version: if the current version already has a `vX.Y.Z` tag, the workflow bumps the patch number and commits it, then builds the `.vsix`, tags the version and attaches the file as the `vsix-public-X.Y.Z` (or `vsix-private-X.Y.Z`) artifact. For a minor or major bump, merge `npm run version:bump -- minor` (the merge itself releases that version). The workflow's own `Release vX.Y.Z [skip ci]` commit does not trigger another release.
+Or from GitHub: the **Package** workflow runs on every merge to `main` (public build) and on demand from **Actions → Package → Run workflow**. Each run releases a new version: if the current version already has a `vX.Y.Z` tag, the workflow bumps the patch number and commits it, then builds the `.vsix`, tags the version and attaches the `.vsix` as a plain file to the `vX.Y.Z` GitHub Release (private builds are marked pre-release). For a minor or major bump, merge `npm run version:bump -- minor` (the merge itself releases that version). The workflow's own `Release vX.Y.Z [skip ci]` commit does not trigger another release.
 
 ## Publish and install
 
@@ -96,7 +96,7 @@ To test alongside the production version: `npm run package:dev` builds a separat
 
 Only a **verified** publisher can list a public extension. Once the publisher is verified (publisher portal → **Details** → verify a domain you own):
 
-1. `npm run package:public` (or, without Node.js installed: GitHub **Actions → Package → Run workflow**, then download the `vsix-public-X.Y.Z` artifact) builds the same extension with `"public": true` (from `overrides.public.json`). It keeps the `Preview` gallery flag; drop it from `vss-extension.json` once the extension is stable.
+1. `npm run package:public` (or, without Node.js installed: GitHub **Actions → Package → Run workflow**, then download the `.vsix` from the latest GitHub Release) builds the same extension with `"public": true` (from `overrides.public.json`). It keeps the `Preview` gallery flag; drop it from `vss-extension.json` once the extension is stable.
 2. Upload the `.vsix` with **Update** on the existing extension. Organizations it was shared with keep it installed.
 
 The listing uses `overview.md` as its description, `img/screenshots/` for the screenshots (regenerate with `npm run screenshots` and copy the ones you want), `LICENSE`, and [PRIVACY.md](PRIVACY.md) as the privacy policy. When the publisher is verified for good, set `"public": true` in `vss-extension.json` and stop using the override.
