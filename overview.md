@@ -17,9 +17,13 @@ See at a glance which work items are getting old and which are stuck. Each dot i
 
 Works with Agile, Scrum, CMMI, Basic and inherited processes: states are read from your process, and only states in the In Progress and Resolved categories are offered.
 
-## Privacy
+## Privacy and security
 
 The extension only reads work items with your own permissions and never writes to Azure DevOps. It has no backend and sends no data anywhere. See the [privacy policy](https://github.com/tomaszzelezny/azure-devops/blob/main/PRIVACY.md).
+
+The source code and its dependencies are scanned with [Trivy](https://trivy.dev) on every change and weekly; the [security policy](https://github.com/tomaszzelezny/azure-devops/blob/main/SECURITY.md) explains how to report a vulnerability.
+
+[![Security scan](https://github.com/tomaszzelezny/azure-devops/actions/workflows/security.yml/badge.svg)](https://github.com/tomaszzelezny/azure-devops/actions/workflows/security.yml)
 
 ## Support
 

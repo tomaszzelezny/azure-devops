@@ -1,5 +1,7 @@
 # Aging WIP for Azure DevOps
 
+[![Security scan](https://github.com/tomaszzelezny/azure-devops/actions/workflows/security.yml/badge.svg)](https://github.com/tomaszzelezny/azure-devops/actions/workflows/security.yml)
+
 An Azure DevOps extension that adds an **Aging WIP** chart to Azure Boards.
 
 Each dot is an open work item:
