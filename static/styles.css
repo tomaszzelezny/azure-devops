@@ -55,6 +55,8 @@ body {
 .thr { stroke: var(--crit); opacity: .6; }
 .thr-label { fill: var(--crit); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
 .dot { stroke: var(--surface); stroke-width: 1.5; }
+.stack-ring { fill: none; stroke-width: 1.5; }
+.stack { fill: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 8px; }
 .lg {
@@ -83,6 +85,11 @@ button.lg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; 
 .tip .row i { width: 8px; height: 8px; border-radius: 50%; }
 .tip .row span { color: var(--muted); }
 .tip .row b { font-weight: 600; text-align: right; }
+.tip .items { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.tip .it { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.tip .it .ti { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tip .it i { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.tip .more { color: var(--muted); }
 
 .status { color: var(--ink-2); padding: 24px 0; }
 .status.err { color: var(--crit); }

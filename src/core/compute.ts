@@ -31,6 +31,21 @@ export function toPoints(items: WipItem[], now: Date): AgingPoint[] {
   }));
 }
 
+/**
+ * Groups points that land on the same spot of the chart (same whole days, as the table shows them),
+ * so the chart can mark how many items a dot hides. Groups and their members keep the input order.
+ */
+export function stackPoints(points: AgingPoint[]): AgingPoint[][] {
+  const groups = new Map<string, AgingPoint[]>();
+  for (const p of points) {
+    const k = `${Math.round(p.age)}:${Math.round(p.inState)}`;
+    const g = groups.get(k);
+    if (g) g.push(p);
+    else groups.set(k, [p]);
+  }
+  return [...groups.values()];
+}
+
 /** Per work item type, the states that count as "work started" (InProgress and Resolved categories). */
 export function startStates(meta: ProjectMeta): Map<string, Set<string>> {
   return new Map(meta.types.map((t) => [t.name, new Set(t.states.filter((s) => WIP_CATEGORIES.includes(s.category)).map((s) => s.name))]));

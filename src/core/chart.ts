@@ -1,4 +1,4 @@
-import { niceMax, thresholdLabel, ticks, type AgingPoint, type StateSeries } from "./compute.ts";
+import { niceMax, stackPoints, thresholdLabel, ticks, type AgingPoint, type StateSeries } from "./compute.ts";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -93,12 +93,17 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   }
   el("line", { x1: ml, x2: W - mr, y1: y(0), y2: y(0), class: "base" }, svg);
 
+  // Items on the same spot share one position; a count next to the dot says how many it hides.
   const dots = el("g", {}, svg);
   const r = c ? 3.5 : 4.5;
-  const placed = P.map((p) => {
-    const px = x(p.age), py = y(p.inState);
-    el("circle", { cx: px, cy: py, r, fill: color.get(p.item.state)!, class: "dot" }, dots);
-    return { p, px, py };
+  const placed = stackPoints(P).map((g) => {
+    const px = x(Math.round(g[0].age)), py = y(Math.round(g[0].inState));
+    for (const p of g) el("circle", { cx: px, cy: py, r, fill: color.get(p.item.state)!, class: "dot" }, dots);
+    if (g.length > 1) {
+      el("circle", { cx: px, cy: py, r: r + 2.5, class: "stack-ring", stroke: color.get(g[0].item.state)! }, dots);
+      el("text", { x: px + r + 4, y: py - r, class: "stack", "font-size": fs }, dots).textContent = `×${g.length}`;
+    }
+    return { g, px, py };
   });
 
   // One transparent hit area with nearest-dot lookup: cheaper than a listener per dot and easier to hit.
@@ -112,18 +117,32 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
       const dd = (d.px - mx) ** 2 + (d.py - my) ** 2;
       if (dd < bd) { bd = dd; best = d; }
     }
-    current = best?.p;
+    // A stack has no single item to open; the tooltip lists them instead.
+    current = best?.g.length === 1 ? best.g[0] : undefined;
     hit.style.cursor = current && opts.onOpen ? "pointer" : "default";
     if (!best) return hideTip();
-    const it = best.p.item;
+    const p0 = best.g[0];
     const row = (k: string, v: string, sw?: string) =>
       `<div class="row">${sw ? `<i style="background:${sw}"></i>` : "<i></i>"}<span>${k}</span><b>${esc(v)}</b></div>`;
+    if (best.g.length > 1) {
+      const max = 12, more = best.g.length - max;
+      return showTip(ev,
+        `<div class="t">${best.g.length} items on this spot</div>` +
+        row("Age", `${fmt(p0.age)} days`) +
+        row("In current state", `${fmt(p0.inState)} days`) +
+        `<div class="items">` +
+        best.g.slice(0, max).map(({ item: it }) =>
+          `<div class="it"><i style="background:${color.get(it.state)}"></i><span class="mono">#${it.id}</span><span class="ti">${esc(it.title)}</span></div>`).join("") +
+        (more > 0 ? `<div class="more">+${more} more</div>` : "") +
+        `</div>`);
+    }
+    const it = p0.item;
     showTip(ev,
       `<div class="t"><span class="mono">#${it.id}</span> ${esc(it.title)}</div>` +
       row("Type", it.type) +
       row("State", it.state, color.get(it.state)) +
-      row("Age", `${fmt(best.p.age)} days`) +
-      row("In current state", `${fmt(best.p.inState)} days`) +
+      row("Age", `${fmt(p0.age)} days`) +
+      row("In current state", `${fmt(p0.inState)} days`) +
       (it.assignedTo ? row("Assigned to", it.assignedTo) : ""));
   });
   hit.addEventListener("mouseleave", () => { current = undefined; hideTip(); });
