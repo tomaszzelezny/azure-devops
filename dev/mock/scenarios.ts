@@ -145,6 +145,8 @@ function scrumAnchors(): MockItem[] {
   return [
     { id: 1101, title: "Anchor: committed PBI", type: "Product Backlog Item", state: "Committed", area: "Demo\\Team A",
       transitions: [{ state: "New", daysAgo: 60 }, { state: "Approved", daysAgo: 50 }, { state: "Committed", daysAgo: 30 }] },
+    { id: 1102, title: "Anchor: committed PBI on the same spot as 1101", type: "Product Backlog Item", state: "Committed", area: "Demo\\Team A",
+      transitions: [{ state: "New", daysAgo: 55 }, { state: "Committed", daysAgo: 30 }] },
   ];
 }
 

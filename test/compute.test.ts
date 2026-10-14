@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  effectiveStates, effectiveTypes, escapeWiql, niceMax, scanHistory, seriesFor, startStates, wipStatesOf, summary, takeaway, ticks, toPoints,
+  effectiveStates, effectiveTypes, escapeWiql, niceMax, scanHistory, seriesFor, stackPoints, startStates, wipStatesOf, summary, takeaway, ticks, toPoints,
 } from "../src/core/compute.ts";
 import { DEFAULT_SETTINGS, type ProjectMeta, type WipItem } from "../src/core/types.ts";
 
@@ -88,4 +88,15 @@ test("helpers", () => {
   assert.equal(niceMax(410), 500);
   assert.deepEqual(ticks(1000, 4), [0, 250, 500, 750, 1000]);
   assert.equal(takeaway([], 365), "No open work items in the selected states.");
+});
+
+test("stackPoints groups items that land on the same whole days", () => {
+  const now = new Date("2024-01-31T12:00:00Z");
+  const pts = toPoints([
+    item(1, "Active", "2024-01-01T12:00:00Z", "2024-01-21T12:00:00Z"),
+    item(2, "Active", "2024-01-11T12:00:00Z", "2024-01-21T12:00:00Z"),
+    item(3, "OnHold", "2024-01-01T10:00:00Z", "2024-01-21T13:00:00Z"), // same as 1 after rounding
+  ], now);
+  assert.deepEqual(stackPoints(pts).map((g) => g.map((p) => p.item.id)), [[1, 3], [2]]);
+  assert.deepEqual(stackPoints([]), []);
 });

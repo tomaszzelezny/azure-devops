@@ -137,6 +137,40 @@ test.describe("hub · other processes and failures", () => {
     expect(await hubRow(page, 1101)).toMatchObject({ age: 30, inState: 30 });
   });
 
+  test("items on the same spot are counted and listed in the tooltip", async ({ page }) => {
+    await openHub(page, "scenario=scrum");
+    expect(await hubRow(page, 1102)).toMatchObject({ age: 30, inState: 30 }); // same spot as 1101
+    const n = await page.evaluate(() => (window as any).__mock.scenario.items.filter((i: any) =>
+      ["Product Backlog Item", "Bug"].includes(i.type) && i.state === "Committed").length);
+    await expect(dots(page)).toHaveCount(n); // every item still gets its dot
+
+    // Centre of the dot each stack label belongs to (the label sits up and to the right of it).
+    const stacks = await page.evaluate(() => [...document.querySelectorAll("#chart text.stack")].map((t) => {
+      const lx = Number(t.getAttribute("x"));
+      const dot = [...document.querySelectorAll("#chart circle.dot")].find((d) =>
+        Math.abs(Number(d.getAttribute("cx")) + Number(d.getAttribute("r")) + 4 - lx) < 0.01 &&
+        Math.abs(Number(d.getAttribute("cy")) - Number(d.getAttribute("r")) - Number(t.getAttribute("y"))) < 0.01)!;
+      dot.scrollIntoView({ block: "center" });
+      const b = dot.getBoundingClientRect();
+      return { label: t.textContent!, x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    }));
+    let found = false;
+    for (const st of stacks) {
+      await page.mouse.move(st.x, st.y);
+      if (!(await page.locator(".tip .it .mono").allTextContents()).includes("#1101")) continue;
+      found = true;
+      const count = Number(st.label.replace("×", ""));
+      expect(count).toBeGreaterThanOrEqual(2);
+      await expect(page.locator(".tip .t")).toHaveText(`${count} items on this spot`);
+      await expect(page.locator(".tip .it")).toHaveCount(count);
+      expect(await page.locator(".tip .it .mono").allTextContents()).toContain("#1102");
+      await page.mouse.click(st.x, st.y);
+      expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([]); // a stack has no single item to open
+      break;
+    }
+    expect(found).toBe(true);
+  });
+
   test("process without StateChangeDate: time in state comes from history", async ({ page }) => {
     await openHub(page, "scenario=no-state-change-date");
     const batch = (await calls(page)).find((c) => c.path.includes("workitemsbatch"))!;
