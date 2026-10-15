@@ -24,7 +24,7 @@ Below the chart there is a one-line summary, e.g. "27 of 140 items have been in 
 ## How the data is computed
 
 1. Work item types and states come from the project's process (`_apis/wit/workitemtypes`), so Agile, Scrum, CMMI, Basic and inherited processes all work.
-   - Default types: the Requirement and Bug categories (e.g. User Story + Bug, or Product Backlog Item + Bug).
+   - Default types: the Requirement, Bug and Task categories (e.g. User Story + Bug + Task, or Product Backlog Item + Bug + Task).
    - Default states: every state in the **InProgress** and **Resolved** categories (e.g. Active, Resolved, plus custom states such as OnHold or For Testing when they belong to those categories).
 2. A WIQL query returns open items in the selected states. For a team it adds the team's area filter (team field values, usually Area Path with "include children").
 3. Fields are fetched in batches of 200 (`workitemsbatch`).

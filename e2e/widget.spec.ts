@@ -108,8 +108,8 @@ test.describe("widget configuration", () => {
     await page.locator("#states label", { hasText: "OnHold" }).locator("input").uncheck();
     expect((await lastSettings(page)).states).toEqual(["Active", "For Testing", "Resolved"]);
 
-    await page.locator("#types label", { hasText: "Task" }).locator("input").check();
-    expect(await lastSettings(page)).toMatchObject({ types: ["Bug", "Task", "User Story"], states: [] });
+    await page.locator("#types label", { hasText: "Task" }).locator("input").uncheck();
+    expect(await lastSettings(page)).toMatchObject({ types: ["Bug", "User Story"], states: [] });
 
     const saved = await page.evaluate(() => (window as any).__mock.save());
     expect(saved.isValid).toBe(true);

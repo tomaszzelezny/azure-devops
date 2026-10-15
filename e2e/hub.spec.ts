@@ -3,18 +3,18 @@ import { calls, chipLabels, dots, expect, hubRow, inClause, lastWiql, openHub, t
 const ANCHORS = { stuckInTesting: 1001, fresh: 1002, restarted: 1003, longHistory: 1004, renamedState: 1005, teamB: 1006, closed: 1007, notStarted: 1008, task: 1009 };
 
 test.describe("hub · agile process", () => {
-  test("defaults: requirement + bug types, InProgress/Resolved states in workflow order", async ({ page }) => {
+  test("defaults: requirement, bug and task types, InProgress/Resolved states in workflow order", async ({ page }) => {
     await openHub(page);
-    expect(await chipLabels(page, "types")).toEqual(["Bug", "Task (off)", "User Story"]); // Test Plan is hidden
+    expect(await chipLabels(page, "types")).toEqual(["Bug", "Task", "User Story"]); // Test Plan is hidden
     expect(await chipLabels(page, "states")).toEqual(["Active", "OnHold", "For Testing", "Resolved"]);
 
     const q = await lastWiql(page);
-    expect(inClause(q, "System.WorkItemType")).toEqual(["User Story", "Bug"]);
+    expect(inClause(q, "System.WorkItemType")).toEqual(["User Story", "Bug", "Task"]);
     expect(inClause(q, "System.State")).toEqual(["Active", "OnHold", "For Testing", "Resolved"]);
     expect(q).not.toContain("System.AreaPath"); // entire project
 
     const expected = await page.evaluate(() => (window as any).__mock.scenario.items.filter((i: any) =>
-      ["User Story", "Bug"].includes(i.type) && ["Active", "OnHold", "For Testing", "Resolved"].includes(i.state)).length);
+      ["User Story", "Bug", "Task"].includes(i.type) && ["Active", "OnHold", "For Testing", "Resolved"].includes(i.state)).length);
     await expect(dots(page)).toHaveCount(expected);
     await expect(page.locator("#take")).toHaveText(new RegExp(`^\\d+ of ${expected} items have been in the same state for more than 1 year\\.`));
   });
@@ -27,7 +27,7 @@ test.describe("hub · agile process", () => {
     expect(await hubRow(page, ANCHORS.renamedState)).toMatchObject({ age: 80, inState: 80 }); // no start in history: falls back to the current state
     expect(await hubRow(page, ANCHORS.closed)).toBeUndefined();
     expect(await hubRow(page, ANCHORS.notStarted)).toBeUndefined();
-    expect(await hubRow(page, ANCHORS.task)).toBeUndefined();
+    expect(await hubRow(page, ANCHORS.task)).toMatchObject({ age: 12, inState: 12 });
   });
 
   test("history paging: a start on the second page of updates is found", async ({ page }) => {
@@ -77,12 +77,12 @@ test.describe("hub · agile process", () => {
     await last.uncheck({ force: true }).catch(() => {});
     await expect(last).toBeChecked();
 
-    await page.locator("#types label", { hasText: "Task" }).locator("input").check();
-    await expect.poll(async () => inClause(await lastWiql(page), "System.WorkItemType")).toContain("Task");
+    await page.locator("#types label", { hasText: "Task" }).locator("input").uncheck();
+    await expect.poll(async () => inClause(await lastWiql(page), "System.WorkItemType")).toEqual(["Bug", "User Story"]);
     // Changing types resets the state selection to the defaults for the new types.
     expect(await chipLabels(page, "states")).toEqual(["Active", "OnHold", "For Testing", "Resolved"]);
     await expect(page.locator("#status")).toBeHidden();
-    expect(await hubRow(page, ANCHORS.task)).toMatchObject({ age: 12, inState: 12 });
+    expect(await hubRow(page, ANCHORS.task)).toBeUndefined();
   });
 
   test("legend hides and shows a state without reloading", async ({ page }) => {
@@ -130,10 +130,10 @@ test.describe("hub · agile process", () => {
 });
 
 test.describe("hub · other processes and failures", () => {
-  test("scrum: PBI + Bug, Committed", async ({ page }) => {
+  test("scrum: PBI + Bug + Task, Committed and In Progress", async ({ page }) => {
     await openHub(page, "scenario=scrum");
-    expect(await chipLabels(page, "types")).toEqual(["Bug", "Product Backlog Item", "Task (off)"]);
-    expect(await chipLabels(page, "states")).toEqual(["Committed"]);
+    expect(await chipLabels(page, "types")).toEqual(["Bug", "Product Backlog Item", "Task"]);
+    expect(await chipLabels(page, "states")).toEqual(["Committed", "In Progress"]);
     expect(await hubRow(page, 1101)).toMatchObject({ age: 30, inState: 30 });
   });
 
