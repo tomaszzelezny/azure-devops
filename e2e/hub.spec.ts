@@ -137,7 +137,7 @@ test.describe("hub · other processes and failures", () => {
     expect(await hubRow(page, 1101)).toMatchObject({ age: 30, inState: 30 });
   });
 
-  test("items on the same spot are counted and listed in the tooltip", async ({ page }) => {
+  test("items on the same spot are counted, listed and can each be opened", async ({ page }) => {
     await openHub(page, "scenario=scrum");
     expect(await hubRow(page, 1102)).toMatchObject({ age: 30, inState: 30 }); // same spot as 1101
     const n = await page.evaluate(() => (window as any).__mock.scenario.items.filter((i: any) =>
@@ -164,8 +164,18 @@ test.describe("hub · other processes and failures", () => {
       await expect(page.locator(".tip .t")).toHaveText(`${count} items on this spot`);
       await expect(page.locator(".tip .it")).toHaveCount(count);
       expect(await page.locator(".tip .it .mono").allTextContents()).toContain("#1102");
+
+      // Clicking the stack pins a list; Escape closes it, picking an item opens that item.
+      const menu = page.locator(".tip.menu");
       await page.mouse.click(st.x, st.y);
-      expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([]); // a stack has no single item to open
+      await expect(menu.locator("button.it")).toHaveCount(count);
+      expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([]);
+      await page.keyboard.press("Escape");
+      await expect(menu).toHaveCount(0);
+      await page.mouse.click(st.x, st.y);
+      await menu.locator('button.it[data-id="1102"]').click();
+      await expect(menu).toHaveCount(0);
+      expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([1102]);
       break;
     }
     expect(found).toBe(true);

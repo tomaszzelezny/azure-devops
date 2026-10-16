@@ -49,6 +49,44 @@ function showTip(ev: MouseEvent, html: string) {
 
 const hideTip = () => { if (tip) tip.hidden = true; };
 
+/** Clicked stack: a pinned list of its items, each one opens on click. Closes on Escape or a click elsewhere. */
+let menu: HTMLDivElement | undefined;
+
+function closeMenu() {
+  if (!menu) return;
+  menu.remove();
+  menu = undefined;
+  document.removeEventListener("mousedown", onOutside, true);
+  document.removeEventListener("keydown", onEscape, true);
+}
+
+function onOutside(ev: MouseEvent) { if (menu && !menu.contains(ev.target as Node)) closeMenu(); }
+function onEscape(ev: KeyboardEvent) { if (ev.key === "Escape") closeMenu(); }
+
+function openMenu(ev: MouseEvent, html: string, onPick: (id: number) => void) {
+  closeMenu();
+  hideTip();
+  menu = document.createElement("div");
+  menu.className = "tip menu";
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = html;
+  document.body.appendChild(menu);
+  const r = menu.getBoundingClientRect();
+  let x = ev.clientX + 6, y = ev.clientY + 6;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - 6;
+  if (y + r.height > innerHeight - 8) y = Math.max(8, innerHeight - r.height - 8);
+  menu.style.left = `${Math.max(8, x)}px`;
+  menu.style.top = `${Math.max(8, y)}px`;
+  menu.addEventListener("click", (e) => {
+    const b = (e.target as Element).closest<HTMLElement>("[data-id]");
+    if (!b) return;
+    closeMenu();
+    onPick(Number(b.dataset.id));
+  });
+  document.addEventListener("mousedown", onOutside, true);
+  document.addEventListener("keydown", onEscape, true);
+}
+
 /**
  * Aging WIP scatter: x = age since work started, y = days in the current state.
  * Dots on the diagonal have not changed state since work started.
@@ -56,6 +94,7 @@ const hideTip = () => { if (tip) tip.hidden = true; };
 export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series: StateSeries[], opts: ChartOptions): void {
   host.innerHTML = "";
   hideTip();
+  closeMenu();
   const W = Math.max(260, host.clientWidth);
   const H = Math.max(160, opts.height);
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img", "aria-label": "Aging WIP" }, host);
@@ -108,45 +147,59 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
 
   // One transparent hit area with nearest-dot lookup: cheaper than a listener per dot and easier to hit.
   const hit = el("rect", { x: ml, y: mt, width: W - ml - mr, height: H - mt - mb, fill: "transparent" }, svg);
-  let current: AgingPoint | undefined;
-  hit.addEventListener("mousemove", (ev) => {
+  type Placed = (typeof placed)[number];
+  const nearest = (ev: MouseEvent): Placed | undefined => {
     const b = svg.getBoundingClientRect();
     const mx = ((ev.clientX - b.left) * W) / b.width, my = ((ev.clientY - b.top) * H) / b.height;
-    let best: (typeof placed)[number] | undefined, bd = 14 ** 2;
+    let best: Placed | undefined, bd = 14 ** 2;
     for (const d of placed) {
       const dd = (d.px - mx) ** 2 + (d.py - my) ** 2;
       if (dd < bd) { bd = dd; best = d; }
     }
-    // A stack has no single item to open; the tooltip lists them instead.
-    current = best?.g.length === 1 ? best.g[0] : undefined;
-    hit.style.cursor = current && opts.onOpen ? "pointer" : "default";
-    if (!best) return hideTip();
-    const p0 = best.g[0];
-    const row = (k: string, v: string, sw?: string) =>
-      `<div class="row">${sw ? `<i style="background:${sw}"></i>` : "<i></i>"}<span>${k}</span><b>${esc(v)}</b></div>`;
-    if (best.g.length > 1) {
-      const max = 12, more = best.g.length - max;
-      return showTip(ev,
-        `<div class="t">${best.g.length} items on this spot</div>` +
-        row("Age", `${fmt(p0.age)} days`) +
-        row("In current state", `${fmt(p0.inState)} days`) +
-        `<div class="items">` +
-        best.g.slice(0, max).map(({ item: it }) =>
-          `<div class="it"><i style="background:${color.get(it.state)}"></i><span class="mono">#${it.id}</span><span class="ti">${esc(it.title)}</span></div>`).join("") +
+    return best;
+  };
+  const row = (k: string, v: string, sw?: string) =>
+    `<div class="row">${sw ? `<i style="background:${sw}"></i>` : "<i></i>"}<span>${k}</span><b>${esc(v)}</b></div>`;
+  const line = (it: AgingPoint["item"], tag: "div" | "button") =>
+    `<${tag} class="it"${tag === "button" ? ` type="button" role="menuitem" data-id="${it.id}"` : ""}>` +
+    `<i style="background:${color.get(it.state)}"></i><span class="mono">#${it.id}</span><span class="ti">${esc(it.title)}</span></${tag}>`;
+  const head = (g: AgingPoint[]) =>
+    `<div class="t">${g.length} items on this spot</div>` +
+    row("Age", `${fmt(g[0].age)} days`) +
+    row("In current state", `${fmt(g[0].inState)} days`);
+
+  let current: Placed | undefined;
+  hit.addEventListener("mousemove", (ev) => {
+    const best = nearest(ev);
+    current = best;
+    hit.style.cursor = best && opts.onOpen ? "pointer" : "default";
+    if (!best || menu) return hideTip();
+    const g = best.g;
+    if (g.length > 1) {
+      const max = 12, more = g.length - max;
+      return showTip(ev, head(g) +
+        `<div class="items">` + g.slice(0, max).map((p) => line(p.item, "div")).join("") +
         (more > 0 ? `<div class="more">+${more} more</div>` : "") +
+        (opts.onOpen ? `<div class="more">Click to pick an item</div>` : "") +
         `</div>`);
     }
-    const it = p0.item;
+    const it = g[0].item;
     showTip(ev,
       `<div class="t"><span class="mono">#${it.id}</span> ${esc(it.title)}</div>` +
       row("Type", it.type) +
       row("State", it.state, color.get(it.state)) +
-      row("Age", `${fmt(p0.age)} days`) +
-      row("In current state", `${fmt(p0.inState)} days`) +
+      row("Age", `${fmt(g[0].age)} days`) +
+      row("In current state", `${fmt(g[0].inState)} days`) +
       (it.assignedTo ? row("Assigned to", it.assignedTo) : ""));
   });
   hit.addEventListener("mouseleave", () => { current = undefined; hideTip(); });
-  hit.addEventListener("click", () => { if (current && opts.onOpen) opts.onOpen(current.item.id); });
+  hit.addEventListener("click", (ev) => {
+    const onOpen = opts.onOpen;
+    if (!current || !onOpen) return;
+    if (current.g.length === 1) return onOpen(current.g[0].item.id);
+    // Overlapping dots: pin the list so each item can be clicked.
+    openMenu(ev, head(current.g) + `<div class="items">${current.g.map((p) => line(p.item, "button")).join("")}</div>`, onOpen);
+  });
 }
 
 /** Legend with counts; clicking a state toggles it (when onToggle is given). */
