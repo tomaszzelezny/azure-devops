@@ -50,7 +50,7 @@ export async function loadProjectMeta(project: string): Promise<ProjectMeta> {
     .sort((a, b) => a.name.localeCompare(b.name));
   return {
     types: visible,
-    defaultTypes: [...inCat("Microsoft.RequirementCategory"), ...inCat("Microsoft.BugCategory")],
+    defaultTypes: [...inCat("Microsoft.RequirementCategory"), ...inCat("Microsoft.BugCategory"), ...inCat("Microsoft.TaskCategory")],
   };
 }
 

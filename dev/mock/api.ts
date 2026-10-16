@@ -92,7 +92,7 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
     if (method === "GET" && isProject(seg[0]) && path.endsWith("/_apis/wit/workitemtypecategories")) {
       const p = scenario.process;
       const cat = (referenceName: string, names: string[]) => ({ referenceName, workItemTypes: names.map((name) => ({ name })) });
-      return { value: [cat("Microsoft.RequirementCategory", p.requirement), cat("Microsoft.BugCategory", p.bug), cat("Microsoft.HiddenCategory", p.hidden)] };
+      return { value: [cat("Microsoft.RequirementCategory", p.requirement), cat("Microsoft.BugCategory", p.bug), cat("Microsoft.TaskCategory", p.task), cat("Microsoft.HiddenCategory", p.hidden)] };
     }
     if (method === "GET" && (m = path.match(/^_apis\/projects\/([^/]+)\/teams$/)) && isProject(decodeURIComponent(m[1]))) {
       return { value: scenario.teams.map((t) => ({ id: t.id, name: t.name })) };

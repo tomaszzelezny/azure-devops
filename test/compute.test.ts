@@ -11,7 +11,7 @@ const meta: ProjectMeta = {
     { name: "Task", states: [{ name: "New", category: "Proposed" }, { name: "Active", category: "InProgress" }, { name: "Closed", category: "Completed" }] },
     { name: "User Story", states: [{ name: "New", category: "Proposed" }, { name: "Active", category: "InProgress" }, { name: "OnHold", category: "InProgress" }, { name: "Resolved", category: "Resolved" }, { name: "Closed", category: "Completed" }] },
   ],
-  defaultTypes: ["User Story", "Bug"],
+  defaultTypes: ["User Story", "Bug", "Task"],
 };
 
 const item = (id: number, state: string, started: string, changed: string): WipItem => ({
@@ -19,8 +19,8 @@ const item = (id: number, state: string, started: string, changed: string): WipI
   createdDate: new Date("2020-01-01"), startedDate: new Date(started), stateChangeDate: new Date(changed),
 });
 
-test("defaults pick Requirement + Bug types and InProgress/Resolved states in workflow order", () => {
-  assert.deepEqual(effectiveTypes(DEFAULT_SETTINGS, meta), ["User Story", "Bug"]);
+test("defaults pick Requirement, Bug and Task types and InProgress/Resolved states in workflow order", () => {
+  assert.deepEqual(effectiveTypes(DEFAULT_SETTINGS, meta), ["User Story", "Bug", "Task"]);
   assert.deepEqual(effectiveStates(DEFAULT_SETTINGS, meta), ["Active", "OnHold", "Resolved"]);
 });
 

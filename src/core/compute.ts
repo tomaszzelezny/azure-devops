@@ -79,7 +79,7 @@ export function effectiveTypes(settings: AgingSettings, meta: ProjectMeta): stri
 
 /**
  * States of the given types in workflow order, de-duplicated by name.
- * The default types (Requirement, then Bug) go first whatever order the types were picked in,
+ * The default types (Requirement, then Bug, then Task) go first whatever order the types were picked in,
  * so the state order, and with it the colours, stays the same when another type is added.
  */
 export function statesOf(types: string[], meta: ProjectMeta): StateMeta[] {

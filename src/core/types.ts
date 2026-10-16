@@ -2,7 +2,7 @@
 export interface AgingSettings {
   /** Team id; empty string means the whole project (no area filter). */
   teamId: string;
-  /** Work item type names. Empty means the defaults (Requirement + Bug categories). */
+  /** Work item type names. Empty means the defaults (Requirement, Bug and Task categories). */
   types: string[];
   /** State names. Empty means every state in the InProgress and Resolved categories. */
   states: string[];

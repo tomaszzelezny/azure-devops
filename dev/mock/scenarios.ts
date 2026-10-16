@@ -13,6 +13,7 @@ export interface MockProcess {
   types: MockType[];
   requirement: string[];
   bug: string[];
+  task: string[];
   hidden: string[];
 }
 
@@ -53,6 +54,7 @@ export const AGILE: MockProcess = {
   ],
   requirement: ["User Story"],
   bug: ["Bug"],
+  task: ["Task"],
   hidden: ["Test Plan"],
 };
 
@@ -64,6 +66,7 @@ export const SCRUM: MockProcess = {
   ],
   requirement: ["Product Backlog Item"],
   bug: ["Bug"],
+  task: ["Task"],
   hidden: [],
 };
 
@@ -101,7 +104,7 @@ function agileAnchors(): MockItem[] {
       transitions: [{ state: "New", daysAgo: 100 }, { state: "Active", daysAgo: 90 }, { state: "Closed", daysAgo: 5 }] },
     { id: 1008, title: "Anchor: not started (must not appear)", type: "User Story", state: "New", area: a,
       transitions: [{ state: "New", daysAgo: 700 }] },
-    { id: 1009, title: "Anchor: task (hidden by default types)", type: "Task", state: "Active", area: a,
+    { id: 1009, title: "Anchor: task (in the default types)", type: "Task", state: "Active", area: a,
       transitions: [{ state: "New", daysAgo: 15 }, { state: "Active", daysAgo: 12 }] },
   ];
 }
