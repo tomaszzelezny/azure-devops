@@ -5,6 +5,7 @@
  */
 import { MOCK_BASE, MOCK_TOKEN } from "./api.ts";
 import { mock } from "./state.ts";
+import manifest from "../../vss-extension.json";
 
 export interface IExtensionInitOptions { loaded?: boolean; applyTheme?: boolean }
 
@@ -20,6 +21,10 @@ export function getWebContext() {
     project: { id: mock.project.id, name: mock.project.name },
     team: mock.team ? { id: mock.team.id, name: mock.team.name } : (undefined as unknown as { id: string; name: string }),
   };
+}
+
+export function getExtensionContext() {
+  return { id: `${manifest.publisher}.${manifest.id}`, publisherId: manifest.publisher, extensionId: manifest.id, version: manifest.version };
 }
 
 export function getContributionId(): string {

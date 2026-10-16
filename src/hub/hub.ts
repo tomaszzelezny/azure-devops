@@ -111,6 +111,7 @@ async function main(): Promise<void> {
   await SDK.init({ applyTheme: true });
   watchTheme(() => { if (items.length) draw(); });
   project = SDK.getWebContext().project;
+  $("version").textContent = `Aging WIP v${SDK.getExtensionContext().version}`;
   restore();
 
   status("Loading project settings…");

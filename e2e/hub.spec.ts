@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { calls, chipLabels, dots, expect, hubRow, inClause, lastWiql, openHub, test } from "./fixtures.ts";
 
 const ANCHORS = { stuckInTesting: 1001, fresh: 1002, restarted: 1003, longHistory: 1004, renamedState: 1005, teamB: 1006, closed: 1007, notStarted: 1008, task: 1009 };
@@ -144,6 +145,12 @@ test.describe("hub · agile process", () => {
 
     await more.click();
     await expect(page.locator("#table tbody tr:visible")).toHaveCount(5);
+  });
+
+  test("shows the extension version in the footer", async ({ page }) => {
+    await openHub(page);
+    const { version } = JSON.parse(readFileSync("vss-extension.json", "utf8"));
+    await expect(page.locator("#version")).toHaveText(`Aging WIP v${version}`);
   });
 
   test("follows the host theme", async ({ page }) => {
