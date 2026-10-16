@@ -133,8 +133,16 @@ select:focus-visible, .btn:focus-visible, .chip:focus-within { outline: 2px soli
 .chip input { margin: 0; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; }
 
-details { margin-top: 16px; }
-summary { cursor: pointer; color: var(--ink-2); }
+/* Item list under the chart: a short preview, "Show all" expands it. */
+.items { margin-top: 16px; }
+.items h2 { font-size: 16px; font-weight: 600; margin: 0; }
+.more {
+  display: block; width: 100%; margin-top: 6px; padding: 8px; cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--focus);
+  background: none; border: 1px dashed var(--line); border-radius: 4px;
+}
+.more:hover { background: var(--chip); }
+.more:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 table { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 13px; }
 th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
 th { color: var(--muted); font-weight: 600; font-size: 12px; }

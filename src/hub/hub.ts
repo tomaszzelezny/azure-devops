@@ -86,17 +86,25 @@ function draw(): void {
   renderTable(shown);
 }
 
+/** Rows the item list shows until the user asks for all of them. */
+const PREVIEW_ROWS = 5;
+let showAll = false;
+
 function renderTable(points: AgingPoint[]): void {
   const top = [...points].sort((a, b) => b.inState - a.inState);
   const n = (v: number) => Math.round(v).toLocaleString();
-  $("tableTitle").textContent = `All items, longest in current state first (${points.length})`;
+  $("items").hidden = !top.length;
   $("table").innerHTML =
     `<table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>State</th>` +
     `<th class="num">In state (days)</th><th class="num">Age (days)</th><th>Assigned to</th></tr></thead><tbody>` +
-    top.map((p) => `<tr><td><a data-id="${p.item.id}" class="mono">${p.item.id}</a></td><td>${esc(p.item.title)}</td>` +
+    top.map((p, i) => `<tr${i >= PREVIEW_ROWS && !showAll ? " hidden" : ""}><td><a data-id="${p.item.id}" class="mono">${p.item.id}</a></td><td>${esc(p.item.title)}</td>` +
       `<td>${esc(p.item.type)}</td><td>${esc(p.item.state)}</td><td class="num">${n(p.inState)}</td>` +
       `<td class="num">${n(p.age)}</td><td>${esc(p.item.assignedTo)}</td></tr>`).join("") +
     `</tbody></table>`;
+  const more = $("more") as HTMLButtonElement;
+  more.hidden = top.length <= PREVIEW_ROWS;
+  more.textContent = showAll ? "Show fewer ▴" : `Show all ${top.length} items ▾`;
+  more.setAttribute("aria-expanded", String(showAll));
 }
 
 async function main(): Promise<void> {
@@ -121,6 +129,7 @@ async function main(): Promise<void> {
     persist(); draw();
   });
   $("refresh").addEventListener("click", () => void reload());
+  $("more").addEventListener("click", () => { showAll = !showAll; draw(); });
   $("table").addEventListener("click", (e) => {
     const id = (e.target as HTMLElement).closest("a")?.dataset.id;
     if (id) void openWorkItem(Number(id));

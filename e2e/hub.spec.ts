@@ -108,7 +108,7 @@ test.describe("hub · agile process", () => {
 
   test("clicking a dot or a table link opens the work item", async ({ page }) => {
     await openHub(page);
-    await page.locator("summary").click();
+    await page.locator("#more").click();
     await page.locator(`#table a[data-id="${ANCHORS.stuckInTesting}"]`).click();
     expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([ANCHORS.stuckInTesting]);
 
@@ -119,6 +119,31 @@ test.describe("hub · agile process", () => {
     const tipId = Number((await page.locator(".tip .mono").textContent())!.replace("#", ""));
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([ANCHORS.stuckInTesting, tipId]);
+  });
+
+  test("item list shows the five longest in state, Show all expands it", async ({ page }) => {
+    await openHub(page);
+    const rows = page.locator("#table tbody tr");
+    const total = await rows.count();
+    expect(total).toBeGreaterThan(5);
+    await expect(page.locator("#table tbody tr:visible")).toHaveCount(5);
+    const days = await page.locator("#table tbody tr:visible td:nth-child(5)").allTextContents();
+    const nums = days.map((d) => Number(d.replace(/\D/g, "")));
+    expect(nums).toEqual([...nums].sort((a, b) => b - a));
+
+    const more = page.locator("#more");
+    await expect(more).toHaveText(`Show all ${total} items ▾`);
+    await more.click();
+    await expect(page.locator("#table tbody tr:visible")).toHaveCount(total);
+    await expect(more).toHaveText("Show fewer ▴");
+    await expect(more).toHaveAttribute("aria-expanded", "true");
+
+    // Stays expanded when the chart redraws.
+    await page.selectOption("#threshold", "90");
+    await expect(page.locator("#table tbody tr:visible")).toHaveCount(total);
+
+    await more.click();
+    await expect(page.locator("#table tbody tr:visible")).toHaveCount(5);
   });
 
   test("follows the host theme", async ({ page }) => {
