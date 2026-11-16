@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { calls, chipLabels, dots, expect, hubRow, inClause, lastWiql, openHub, test } from "./fixtures.ts";
+import { calls, chipLabels, dots, downloadReport, expect, hubRow, inClause, lastWiql, openHub, test } from "./fixtures.ts";
 
 const ANCHORS = { stuckInTesting: 1001, fresh: 1002, restarted: 1003, longHistory: 1004, renamedState: 1005, teamB: 1006, closed: 1007, notStarted: 1008, task: 1009 };
 
@@ -212,7 +212,7 @@ test.describe("hub · agile process", () => {
     await openHub(page);
     const button = page.locator("#export");
     await expect(button).toBeEnabled();
-    const [file] = await Promise.all([page.waitForEvent("download"), button.click()]);
+    const file = await downloadReport(page);
     expect(file.suggestedFilename()).toMatch(/^aging-wip-demo-\d{4}-\d{2}-\d{2}\.png$/);
     const png = readFileSync((await file.path())!);
     expect(png.subarray(1, 4).toString()).toBe("PNG");
@@ -233,10 +233,23 @@ test.describe("hub · agile process", () => {
     await expect(page.locator("#export")).toBeEnabled();
   });
 
-  test("Download report works in Polish", async ({ page }) => {
+  test("Download report asks for the language; the Azure DevOps language comes first", async ({ page }) => {
     await openHub(page, "culture=pl-PL");
-    const [file] = await Promise.all([page.waitForEvent("download"), page.click("#export")]);
+    await page.click("#export");
+    const menu = page.locator("#export-langs");
+    await expect(menu.locator("button")).toHaveText(["Polski", "English"]);
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+
+    const file = await downloadReport(page, "Polski");
     expect(readFileSync((await file.path())!).subarray(1, 4).toString()).toBe("PNG");
+    await expect(menu).toHaveCount(0);
+
+    await openHub(page);
+    await page.click("#export");
+    await expect(menu.locator("button")).toHaveText(["English", "Polski"]);
+    await page.click("h1");
+    await expect(menu).toHaveCount(0);
   });
 });
 

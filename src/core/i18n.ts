@@ -5,6 +5,11 @@
  */
 export type Lang = "en" | "pl";
 
+export const LANGS: Lang[] = ["en", "pl"];
+
+/** Language names as shown in the language picker (each in its own language). */
+export const LANG_NAMES: Record<Lang, string> = { en: "English", pl: "Polski" };
+
 export function langOf(culture: string | undefined): Lang {
   return /^pl\b/i.test(culture ?? "") ? "pl" : "en";
 }
