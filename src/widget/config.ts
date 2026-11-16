@@ -57,6 +57,10 @@ async function load(ws: WidgetSettings, ctx: ConfigurationContext) {
   thr.value = String(settings.thresholdDays);
   thr.addEventListener("change", () => { settings = { ...settings, thresholdDays: Number(thr.value) }; changed(); });
 
+  const cur = $<HTMLInputElement>("current-iteration");
+  cur.checked = settings.includeCurrentIteration;
+  cur.addEventListener("change", () => { settings = { ...settings, includeCurrentIteration: cur.checked }; changed(); });
+
   renderLists();
   return { statusType: WidgetStatusType.Success };
 }

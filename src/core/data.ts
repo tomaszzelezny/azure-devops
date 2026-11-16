@@ -1,5 +1,5 @@
 import { get, post, seg } from "./ado.ts";
-import { escapeWiql, scanHistory, startStates, type StateUpdate } from "./compute.ts";
+import { escapeWiql, excludeIterationClause, scanHistory, startStates, type StateUpdate } from "./compute.ts";
 import type { ProjectMeta, Team, TypeMeta, WipItem } from "./types.ts";
 
 interface List<T> { value: T[]; count?: number }
@@ -33,6 +33,7 @@ const FIELDS = [
   "System.WorkItemType",
   "System.State",
   "System.AssignedTo",
+  "System.IterationPath",
   "System.CreatedDate",
   "Microsoft.VSTS.Common.StateChangeDate",
 ];
@@ -70,16 +71,40 @@ async function teamClause(project: string, teamId: string): Promise<string> {
   return ` AND (${parts.join(" OR ")})`;
 }
 
+/**
+ * Path of the team's current iteration; without a team, of the project's default team.
+ * Undefined when no iteration is current (the API may answer that with an empty list or with an error).
+ */
+export async function currentIteration(project: string, teamId: string): Promise<string | undefined> {
+  try {
+    const res = await get<List<{ path: string }>>(
+      `${seg(project)}/${teamId ? `${seg(teamId)}/` : ""}_apis/work/teamsettings/iterations?$timeframe=current`);
+    return res.value[0]?.path;
+  } catch {
+    return undefined;
+  }
+}
+
+export interface LoadOptions {
+  /** False leaves out items in the current iteration. Default true. */
+  includeCurrentIteration?: boolean;
+  onProgress?: (done: number, total: number) => void;
+}
+
 export async function loadWipItems(
   project: string, teamId: string, types: string[], states: string[], meta: ProjectMeta,
-  onProgress?: (done: number, total: number) => void,
+  { includeCurrentIteration = true, onProgress }: LoadOptions = {},
 ): Promise<WipItem[]> {
   if (!types.length || !states.length) return [];
+  const [team, iteration] = await Promise.all([
+    teamClause(project, teamId),
+    includeCurrentIteration ? undefined : currentIteration(project, teamId),
+  ]);
   const query =
     "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project" +
     ` AND [System.WorkItemType] IN (${types.map(escapeWiql).join(", ")})` +
     ` AND [System.State] IN (${states.map(escapeWiql).join(", ")})` +
-    (await teamClause(project, teamId));
+    team + excludeIterationClause(iteration);
   const res = await post<{ workItems: { id: number }[] }>(`${seg(project)}/_apis/wit/wiql?$top=20000`, { query });
   const ids = res.workItems.map((w) => w.id);
 
@@ -104,6 +129,7 @@ function toItem(w: ApiWorkItem): WipItem {
     type: String(f["System.WorkItemType"] ?? ""),
     state: String(f["System.State"] ?? ""),
     assignedTo: typeof assigned === "string" ? assigned : assigned?.displayName ?? "",
+    iterationPath: String(f["System.IterationPath"] ?? ""),
     createdDate: created,
     startedDate: created, // replaced by fillHistory
     // NaN marks "unknown" until fillHistory resolves it.

@@ -16,7 +16,7 @@ function literals(list: string): string[] {
   return [...list.matchAll(/'((?:[^']|'')*)'/g)].map((m) => m[1].replace(/''/g, "'"));
 }
 
-interface WiqlFilter { types: string[]; states: string[]; areas: { path: string; under: boolean }[] }
+interface WiqlFilter { types: string[]; states: string[]; areas: { path: string; under: boolean }[]; notUnderIterations: string[] }
 
 export function parseWiql(query: string): WiqlFilter {
   if (!/\[System\.TeamProject\] = @project/.test(query)) throw new Error("WIQL must be scoped to @project");
@@ -25,11 +25,14 @@ export function parseWiql(query: string): WiqlFilter {
   if (!types || !states) throw new Error(`Unexpected WIQL: ${query}`);
   const areas = [...query.matchAll(/\[System\.AreaPath\] (UNDER|=) ('(?:[^']|'')*')/g)]
     .map((m) => ({ path: literals(m[2])[0], under: m[1] === "UNDER" }));
-  return { types: literals(types[1]), states: literals(states[1]), areas };
+  const notUnderIterations = [...query.matchAll(/\[System\.IterationPath\] NOT UNDER ('(?:[^']|'')*')/g)].map((m) => literals(m[1])[0]);
+  return { types: literals(types[1]), states: literals(states[1]), areas, notUnderIterations };
 }
 
 function matches(item: MockItem, f: WiqlFilter): boolean {
   if (!f.types.includes(item.type) || !f.states.includes(item.state)) return false;
+  const iteration = item.iteration ?? "Demo";
+  if (f.notUnderIterations.some((p) => iteration === p || iteration.startsWith(p + "\\"))) return false;
   if (!f.areas.length) return true;
   return f.areas.some((a) => item.area === a.path || (a.under && item.area.startsWith(a.path + "\\")));
 }
@@ -44,6 +47,7 @@ function fields(item: MockItem, now: number, scenario: Scenario, wanted: string[
     "System.WorkItemType": item.type,
     "System.State": item.state,
     "System.AreaPath": item.area,
+    "System.IterationPath": item.iteration ?? "Demo",
     "System.CreatedDate": iso(now, item.transitions[0].daysAgo),
     "System.AssignedTo": item.assignedTo ? { displayName: item.assignedTo, uniqueName: `${item.assignedTo.split(" ")[0].toLowerCase()}@example.com` } : undefined,
     "Microsoft.VSTS.Common.StateChangeDate": scenario.noStateChangeDate ? undefined : iso(now, last.daysAgo),
@@ -101,6 +105,14 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
       const team = scenario.teams.find((t) => t.id === decodeURIComponent(m![2]) || t.name === decodeURIComponent(m![2]));
       if (!team) throw Object.assign(new Error(`Team ${m[2]} not found`), { status: 404 });
       return { field: { referenceName: "System.AreaPath" }, values: team.areas };
+    }
+    // Without a team segment the API answers for the project's default team (the first one here).
+    if (method === "GET" && (m = path.match(/^([^/]+)\/(?:([^/]+)\/)?_apis\/work\/teamsettings\/iterations$/)) && isProject(decodeURIComponent(m[1]))) {
+      if (query.get("$timeframe") !== "current") throw Object.assign(new Error("Mock API: only $timeframe=current is supported"), { status: 404 });
+      const team = m[2] ? scenario.teams.find((t) => t.id === decodeURIComponent(m![2]) || t.name === decodeURIComponent(m![2])) : scenario.teams[0];
+      if (!team) throw Object.assign(new Error(`Team ${m[2]} not found`), { status: 404 });
+      const p = team.currentIteration;
+      return { count: p ? 1 : 0, value: p ? [{ id: `it-${team.id}`, name: p.split("\\").pop(), path: p, attributes: { timeFrame: "current" } }] : [] };
     }
     if (method === "POST" && isProject(seg[0]) && path.endsWith("/_apis/wit/wiql")) {
       const top = Number(query.get("$top") ?? 20000);

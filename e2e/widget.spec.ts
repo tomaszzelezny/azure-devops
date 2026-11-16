@@ -48,6 +48,13 @@ test.describe("dashboard widget", () => {
     await expect(page.locator("#chart .thr-label")).toHaveText("90 days in the same state");
   });
 
+  test("without the current iteration: leaves out the dashboard team's current iteration", async ({ page }) => {
+    await openWidget(page, `team=team-b&settings=${encodeURIComponent(JSON.stringify({ includeCurrentIteration: false }))}`);
+    expect((await mock(page)).result).toEqual({ statusType: 0 });
+    expect(await lastWiql(page)).toContain("[System.IterationPath] NOT UNDER 'Demo\\Team B\\Sprint 3'");
+    expect((await calls(page)).some((c) => c.path.includes("/team-b/_apis/work/teamsettings/iterations"))).toBe(true);
+  });
+
   for (const [cols, rows] of [[2, 2], [3, 2], [4, 3], [6, 4]]) {
     test(`fits a ${cols}×${rows} tile without overflow`, async ({ page }) => {
       await openWidget(page, "", { cols, rows });
@@ -100,7 +107,7 @@ test.describe("widget configuration", () => {
   test("every change notifies the host with the full settings", async ({ page }) => {
     await openConfig(page);
     await page.selectOption("#threshold", "180");
-    expect(await lastSettings(page)).toEqual({ types: [], states: [], thresholdDays: 180 }); // teamId omitted = dashboard team
+    expect(await lastSettings(page)).toEqual({ types: [], states: [], thresholdDays: 180, includeCurrentIteration: true }); // teamId omitted = dashboard team
 
     await page.selectOption("#team", "");
     expect(await lastSettings(page)).toMatchObject({ teamId: "", thresholdDays: 180 });
@@ -111,14 +118,19 @@ test.describe("widget configuration", () => {
     await page.locator("#types label", { hasText: "Task" }).locator("input").uncheck();
     expect(await lastSettings(page)).toMatchObject({ types: ["Bug", "User Story"], states: [] });
 
+    await expect(page.locator("#current-iteration")).toBeChecked();
+    await page.locator("#current-iteration").uncheck();
+    expect(await lastSettings(page)).toMatchObject({ includeCurrentIteration: false });
+
     const saved = await page.evaluate(() => (window as any).__mock.save());
     expect(saved.isValid).toBe(true);
     expect(JSON.parse(saved.customSettings.data)).toEqual(await lastSettings(page));
   });
 
   test("shows stored settings", async ({ page }) => {
-    const settings = JSON.stringify({ teamId: "team-b", thresholdDays: 30, states: ["OnHold"], types: ["User Story"] });
+    const settings = JSON.stringify({ teamId: "team-b", thresholdDays: 30, states: ["OnHold"], types: ["User Story"], includeCurrentIteration: false });
     await openConfig(page, `settings=${encodeURIComponent(settings)}`);
+    await expect(page.locator("#current-iteration")).not.toBeChecked();
     await expect(page.locator("#team")).toHaveValue("team-b");
     await expect(page.locator("#threshold")).toHaveValue("30");
     await expect(page.locator("#states input:checked")).toHaveCount(1);

@@ -31,6 +31,50 @@ test.describe("hub · agile process", () => {
     expect(await hubRow(page, ANCHORS.task)).toMatchObject({ age: 12, inState: 12 });
   });
 
+  test("last table column shows the iteration path", async ({ page }) => {
+    await openHub(page);
+    await expect(page.locator("#table th").last()).toHaveText("Iteration path");
+    expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ iteration: "Demo\\Sprint 3" });
+    expect(await hubRow(page, ANCHORS.fresh)).toMatchObject({ iteration: "Demo\\Sprint 12" });
+    const batch = (await calls(page)).find((c) => c.path.includes("workitemsbatch"))!;
+    expect(batch.body.fields).toContain("System.IterationPath");
+  });
+
+  test("Include current iteration: on by default; off leaves out the team's current iteration and is remembered", async ({ page }) => {
+    await openHub(page);
+    const box = page.locator("#current-iteration");
+    await expect(box).toBeChecked();
+    expect(await lastWiql(page)).not.toContain("System.IterationPath");
+    expect((await calls(page)).some((c) => c.path.includes("teamsettings/iterations"))).toBe(false);
+    expect(await hubRow(page, ANCHORS.fresh)).toBeDefined();
+
+    // Entire project: the default team's (Team A) current iteration, children included.
+    await box.uncheck();
+    await expect.poll(() => lastWiql(page)).toContain("[System.IterationPath] NOT UNDER 'Demo\\Sprint 12'");
+    await expect(page.locator("#status")).toBeHidden();
+    const it = (await calls(page)).filter((c) => c.path.includes("teamsettings/iterations"));
+    expect(it.map((c) => c.path)).toEqual([expect.stringMatching(/^Demo\/_apis\/work\/teamsettings\/iterations\?\$timeframe=current&/)]);
+    expect(await hubRow(page, ANCHORS.fresh)).toBeUndefined(); // in Sprint 12
+    expect(await hubRow(page, ANCHORS.task)).toBeUndefined(); // in Sprint 12\Week 2
+    expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ age: 450, iteration: "Demo\\Sprint 3" });
+    expect(await hubRow(page, ANCHORS.teamB)).toBeDefined(); // Team B's sprint is not Team A's
+
+    await page.reload();
+    await expect(page.locator("#status")).toBeHidden();
+    await expect(box).not.toBeChecked();
+
+    // A selected team uses its own current iteration.
+    await page.selectOption("#team", "team-b");
+    await expect.poll(() => lastWiql(page)).toContain("[System.IterationPath] NOT UNDER 'Demo\\Team B\\Sprint 3'");
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await hubRow(page, ANCHORS.teamB)).toBeUndefined();
+
+    await box.check();
+    await expect.poll(() => lastWiql(page)).not.toContain("System.IterationPath");
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await hubRow(page, ANCHORS.teamB)).toMatchObject({ age: 60, inState: 20 });
+  });
+
   test("history paging: a start on the second page of updates is found", async ({ page }) => {
     await openHub(page);
     expect(await hubRow(page, ANCHORS.longHistory)).toMatchObject({ state: "OnHold", age: 100, inState: 30 });

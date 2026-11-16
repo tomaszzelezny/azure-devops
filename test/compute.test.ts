@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  effectiveStates, effectiveTypes, escapeWiql, niceMax, scanHistory, seriesFor, stackPoints, startStates, wipStatesOf, summary, takeaway, ticks, toPoints,
+  effectiveStates, effectiveTypes, escapeWiql, excludeIterationClause, niceMax, scanHistory, seriesFor, stackPoints, startStates, wipStatesOf, summary, takeaway, ticks, toPoints,
 } from "../src/core/compute.ts";
 import { DEFAULT_SETTINGS, type ProjectMeta, type WipItem } from "../src/core/types.ts";
 
@@ -84,6 +84,8 @@ test("history scan finds the first start and the last state change", () => {
 
 test("helpers", () => {
   assert.equal(escapeWiql("O'Brien"), "'O''Brien'");
+  assert.equal(excludeIterationClause("Demo\\Sprint 12"), " AND [System.IterationPath] NOT UNDER 'Demo\\Sprint 12'");
+  assert.equal(excludeIterationClause(undefined), "");
   assert.equal(niceMax(730), 1000);
   assert.equal(niceMax(410), 500);
   assert.deepEqual(ticks(1000, 4), [0, 250, 500, 750, 1000]);

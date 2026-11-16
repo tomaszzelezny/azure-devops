@@ -17,7 +17,13 @@ export interface MockProcess {
   hidden: string[];
 }
 
-export interface MockTeam { id: string; name: string; areas: { value: string; includeChildren: boolean }[] }
+export interface MockTeam {
+  id: string;
+  name: string;
+  areas: { value: string; includeChildren: boolean }[];
+  /** Path of the team's current iteration; none when no iteration is current. */
+  currentIteration?: string;
+}
 
 export interface MockItem {
   id: number;
@@ -25,6 +31,8 @@ export interface MockItem {
   type: string;
   state: string;
   area: string;
+  /** Iteration path; the project root ("Demo") when unset. */
+  iteration?: string;
   assignedTo?: string;
   /** State transitions, oldest first; the first one is the creation. Days are "days ago". */
   transitions: { state: string; daysAgo: number }[];
@@ -35,6 +43,7 @@ export interface MockItem {
 export interface Scenario {
   description: string;
   process: MockProcess;
+  /** The first team is the project's default team. */
   teams: MockTeam[];
   items: MockItem[];
   /** Simulate a process without Microsoft.VSTS.Common.StateChangeDate. */
@@ -71,8 +80,8 @@ export const SCRUM: MockProcess = {
 };
 
 const TEAMS: MockTeam[] = [
-  { id: "team-a", name: "Team A", areas: [{ value: "Demo\\Team A", includeChildren: true }] },
-  { id: "team-b", name: "Team B", areas: [{ value: "Demo\\Team B", includeChildren: false }] },
+  { id: "team-a", name: "Team A", areas: [{ value: "Demo\\Team A", includeChildren: true }], currentIteration: "Demo\\Sprint 12" },
+  { id: "team-b", name: "Team B", areas: [{ value: "Demo\\Team B", includeChildren: false }], currentIteration: "Demo\\Team B\\Sprint 3" },
 ];
 
 /** Anchors with exact expected values (age = days since first start, inState = days in current state). */
@@ -88,9 +97,9 @@ export const ANCHORS = {
 function agileAnchors(): MockItem[] {
   const a = "Demo\\Team A";
   return [
-    { id: 1001, title: "Anchor: stuck in testing", type: "User Story", state: "For Testing", area: a, assignedTo: "Ada Lovelace",
+    { id: 1001, title: "Anchor: stuck in testing", type: "User Story", state: "For Testing", area: a, iteration: "Demo\\Sprint 3", assignedTo: "Ada Lovelace",
       transitions: [{ state: "New", daysAgo: 500 }, { state: "Active", daysAgo: 450 }, { state: "For Testing", daysAgo: 400 }] },
-    { id: 1002, title: "Anchor: fresh bug", type: "Bug", state: "Active", area: `${a}\\Mobile`,
+    { id: 1002, title: "Anchor: fresh bug", type: "Bug", state: "Active", area: `${a}\\Mobile`, iteration: "Demo\\Sprint 12",
       transitions: [{ state: "New", daysAgo: 20 }, { state: "Active", daysAgo: 10 }] },
     { id: 1003, title: "Anchor: restarted after going back to New", type: "User Story", state: "Active", area: a,
       transitions: [{ state: "New", daysAgo: 300 }, { state: "Active", daysAgo: 250 }, { state: "New", daysAgo: 200 }, { state: "Active", daysAgo: 50 }] },
@@ -98,13 +107,13 @@ function agileAnchors(): MockItem[] {
       transitions: [{ state: "New", daysAgo: 400 }, { state: "Active", daysAgo: 100 }, { state: "OnHold", daysAgo: 30 }] },
     { id: 1005, title: "Anchor: history uses a renamed state", type: "User Story", state: "Active", area: a,
       transitions: [{ state: "New", daysAgo: 90 }, { state: "In Flight", daysAgo: 80 }] },
-    { id: 1006, title: "Anchor: Team B item", type: "Bug", state: "Active", area: "Demo\\Team B",
+    { id: 1006, title: "Anchor: Team B item", type: "Bug", state: "Active", area: "Demo\\Team B", iteration: "Demo\\Team B\\Sprint 3",
       transitions: [{ state: "New", daysAgo: 70 }, { state: "Active", daysAgo: 60 }, { state: "For Testing", daysAgo: 40 }, { state: "Active", daysAgo: 20 }] },
     { id: 1007, title: "Anchor: closed (must not appear)", type: "User Story", state: "Closed", area: a,
       transitions: [{ state: "New", daysAgo: 100 }, { state: "Active", daysAgo: 90 }, { state: "Closed", daysAgo: 5 }] },
     { id: 1008, title: "Anchor: not started (must not appear)", type: "User Story", state: "New", area: a,
       transitions: [{ state: "New", daysAgo: 700 }] },
-    { id: 1009, title: "Anchor: task (in the default types)", type: "Task", state: "Active", area: a,
+    { id: 1009, title: "Anchor: task (in the default types)", type: "Task", state: "Active", area: a, iteration: "Demo\\Sprint 12\\Week 2",
       transitions: [{ state: "New", daysAgo: 15 }, { state: "Active", daysAgo: 12 }] },
   ];
 }
@@ -137,6 +146,8 @@ function filler(process: MockProcess, count: number, seed: number): MockItem[] {
       type,
       state: transitions[transitions.length - 1].state,
       area: rnd() < 0.75 ? "Demo\\Team A" : "Demo\\Team B",
+      // From the index, not the PRNG, so the rest of the filler stays as it was.
+      iteration: ["Demo", "Demo\\Sprint 10", "Demo\\Sprint 11", "Demo\\Sprint 12"][i % 4],
       assignedTo: rnd() < 0.7 ? people[i % people.length] : undefined,
       transitions,
     });
