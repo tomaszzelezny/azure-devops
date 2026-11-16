@@ -44,6 +44,10 @@ test.describe("hub · agile process", () => {
     await openHub(page);
     const box = page.locator("#current-iteration");
     await expect(box).toBeChecked();
+    // Its own row, above the type and state filters.
+    const iterRow = (await box.locator("xpath=ancestor::div[contains(@class,'controls')]").boundingBox())!;
+    const typesTop = (await page.locator("#types").boundingBox())!.y;
+    expect(iterRow.y + iterRow.height).toBeLessThanOrEqual(typesTop);
     expect(await lastWiql(page)).not.toContain("System.IterationPath");
     expect((await calls(page)).some((c) => c.path.includes("teamsettings/iterations"))).toBe(false);
     expect(await hubRow(page, ANCHORS.fresh)).toBeDefined();
