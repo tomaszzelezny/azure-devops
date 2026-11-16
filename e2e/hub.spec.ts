@@ -207,6 +207,37 @@ test.describe("hub · agile process", () => {
     await page.evaluate(() => (window as any).__mock.setTheme("light"));
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   });
+
+  test("Download report saves a PNG of the current view", async ({ page }) => {
+    await openHub(page);
+    const button = page.locator("#export");
+    await expect(button).toBeEnabled();
+    const [file] = await Promise.all([page.waitForEvent("download"), button.click()]);
+    expect(file.suggestedFilename()).toMatch(/^aging-wip-demo-\d{4}-\d{2}-\d{2}\.png$/);
+    const png = readFileSync((await file.path())!);
+    expect(png.subarray(1, 4).toString()).toBe("PNG");
+    expect(png.readUInt32BE(16), "width: 1184 px at 2×").toBe(2368);
+    expect(png.readUInt32BE(20)).toBeGreaterThan(1200);
+  });
+
+  test("Download report is disabled while loading and when the legend hides every state", async ({ page }) => {
+    await page.goto("hub.html?delay=200");
+    await expect(page.locator("#export")).toBeDisabled();
+    await expect(page.locator("#status")).toBeHidden({ timeout: 15_000 });
+    await expect(page.locator("#export")).toBeEnabled();
+    for (const lg of await page.locator("#legend button").all()) await lg.click();
+    await expect(dots(page)).toHaveCount(0);
+    await expect(page.locator("#export")).toBeDisabled();
+    await expect(page.locator("#export")).toHaveAttribute("title", "No work items to report");
+    await page.locator("#legend button").first().click();
+    await expect(page.locator("#export")).toBeEnabled();
+  });
+
+  test("Download report works in Polish", async ({ page }) => {
+    await openHub(page, "culture=pl-PL");
+    const [file] = await Promise.all([page.waitForEvent("download"), page.click("#export")]);
+    expect(readFileSync((await file.path())!).subarray(1, 4).toString()).toBe("PNG");
+  });
 });
 
 test.describe("hub · other processes and failures", () => {
@@ -274,6 +305,8 @@ test.describe("hub · other processes and failures", () => {
     await openHub(page, "scenario=empty");
     await expect(dots(page)).toHaveCount(0);
     await expect(page.locator("#take")).toHaveText("No open work items in the selected states.");
+    await expect(page.locator("#export")).toBeDisabled();
+    await expect(page.locator("#export")).toHaveAttribute("title", "No work items to report");
   });
 
   test("shows a loader while data is fetched, also on refresh", async ({ page }) => {

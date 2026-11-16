@@ -171,3 +171,48 @@ export function takeaway(points: AgingPoint[], thresholdDays: number): string {
     : `Only ${fresh} ${fresh === 1 ? "item" : "items"} changed state in the last 30 days.`;
   return `<b>${stuck} of ${total}</b> items have been in the same state for more than ${thresholdLabel(thresholdDays)}. ${tail}`;
 }
+
+export interface StateStats {
+  name: string;
+  color: number;
+  count: number;
+  medianAge: number;
+  p85Age: number;
+  /** Longest time in this state among its items. */
+  maxInState: number;
+}
+
+export interface ReportStats {
+  total: number;
+  medianAge: number;
+  p85Age: number;
+  /** Item with the highest age (undefined when there are no items). */
+  oldest?: AgingPoint;
+  /** Items longer than the threshold in their current state. */
+  overThreshold: number;
+  /** Items that changed state in the last 30 days. */
+  fresh: number;
+  byState: StateStats[];
+  /** Items longest in their current state, longest first. */
+  longest: AgingPoint[];
+}
+
+/** Numbers for the downloadable report, computed from the points the chart shows. */
+export function reportStats(points: AgingPoint[], series: StateSeries[], thresholdDays: number, longestCount = 6): ReportStats {
+  const ages = points.map((p) => p.age);
+  const { stuck, fresh, total } = summary(points, thresholdDays);
+  return {
+    total,
+    medianAge: percentile(ages, 0.5),
+    p85Age: percentile(ages, 0.85),
+    oldest: points.reduce<AgingPoint | undefined>((a, p) => (!a || p.age > a.age ? p : a), undefined),
+    overThreshold: stuck,
+    fresh,
+    byState: series.map((s) => {
+      const ps = points.filter((p) => p.item.state === s.name);
+      const a = ps.map((p) => p.age);
+      return { name: s.name, color: s.color, count: ps.length, medianAge: percentile(a, 0.5), p85Age: percentile(a, 0.85), maxInState: Math.max(0, ...ps.map((p) => p.inState)) };
+    }),
+    longest: [...points].sort((a, b) => b.inState - a.inState).slice(0, longestCount),
+  };
+}

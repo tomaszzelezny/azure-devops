@@ -8,6 +8,7 @@
  *   &name=<text>           widget title
  *   &cols=4&rows=3         widget size
  *   &delay=<ms>            every API response waits this long (shows the loader)
+ *   &culture=pl-PL         the user's Azure DevOps language (default en-US)
  *
  * Everything is exposed as window.__mock so tests can inspect calls and drive the page.
  */
@@ -38,6 +39,7 @@ export const mock = {
   project,
   team: page === "hub" || teamParam === "none" ? undefined : scenario.teams.find((t) => t.id === teamParam) as MockTeam | undefined,
   contributionId: page === "hub" ? "aging-wip-hub" : page === "widget" ? "aging-wip-widget" : "aging-wip-widget-config",
+  culture: params.get("culture") ?? "en-US",
   theme: (params.get("theme") === "dark" ? "dark" : "light") as "light" | "dark",
   calls: api.calls as RecordedCall[],
   opened: [] as number[],
