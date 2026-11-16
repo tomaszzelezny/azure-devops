@@ -25,6 +25,15 @@ for (const theme of ["light", "dark"] as const) {
     });
   }
 
+  for (const culture of ["en-US", "pl-PL"]) {
+    test(`report ${culture} ${theme} @screenshot`, async ({ page }) => {
+      await page.goto(`hub.html?theme=${theme}&culture=${culture}`);
+      await expect(page.locator("#status")).toBeHidden();
+      const [file] = await Promise.all([page.waitForEvent("download"), page.click("#export")]);
+      await file.saveAs(`screenshots/report-${culture}-${theme}.png`);
+    });
+  }
+
   test(`loading ${theme} @screenshot`, async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 400 });
     await page.goto(`hub.html?delay=2000&theme=${theme}`);

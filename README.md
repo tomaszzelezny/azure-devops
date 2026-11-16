@@ -18,7 +18,7 @@ Below the chart there is a one-line summary, e.g. "27 of 140 items have been in 
 
 | Part | Where | Description |
 |---|---|---|
-| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of all items, longest in their current state first. Settings are remembered in the browser per project. |
+| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of all items, longest in their current state first. **Download report** saves the current view as one PNG: filters, summary numbers (median and 85th percentile age, oldest item, over threshold, changed in the last 30 days), the chart, a per-state table and the items longest in state, in the user's Azure DevOps language (English or Polish). Settings are remembered in the browser per project. |
 | **Aging WIP** widget | Dashboard → Add widget | Sizes from 2×2 to 6×4. Configuration: team (defaults to the dashboard's team), types, states, threshold. |
 
 ## How the data is computed
@@ -109,6 +109,8 @@ The listing uses `overview.md` as its description, `img/screenshots/` for the sc
 src/core/compute.ts   calculations (age, time in state, default types and states, summary) – pure functions
 src/core/data.ts      data loading from the Azure DevOps REST API
 src/core/chart.ts     SVG chart, tooltip, legend
+src/core/report.ts    downloadable report: SVG built as a string, drawn to a PNG
+src/core/i18n.ts      report texts (English, Polish) picked by the user's culture
 src/hub/hub.ts        Boards hub
 src/widget/           dashboard widget and its configuration
 static/               HTML and CSS (light and dark theme)

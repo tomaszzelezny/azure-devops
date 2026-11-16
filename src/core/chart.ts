@@ -21,7 +21,15 @@ export interface ChartOptions {
   /** Smaller margins and fonts for dashboard widgets. */
   compact?: boolean;
   onOpen?: (id: number) => void;
+  /** Fixed width instead of the host's (the host may be detached, e.g. for the report). */
+  width?: number;
+  /** Axis and threshold texts (the report translates them). */
+  labels?: { x: string; y: string; threshold: (days: number) => string };
+  /** Locale for the axis numbers. */
+  locale?: string;
 }
+
+const LABELS = { x: "age (days since in progress)", y: "days in current state", threshold: (d: number) => `${thresholdLabel(d)} in the same state` };
 
 let tip: HTMLDivElement | undefined;
 
@@ -95,7 +103,9 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   host.innerHTML = "";
   hideTip();
   closeMenu();
-  const W = Math.max(260, host.clientWidth);
+  const W = Math.max(260, opts.width ?? host.clientWidth);
+  const L = opts.labels ?? LABELS;
+  const num = (v: number) => Math.round(v).toLocaleString(opts.locale);
   const H = Math.max(160, opts.height);
   const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img", "aria-label": "Aging WIP" }, host);
 
@@ -114,21 +124,21 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   const ax = el("g", { class: "axis", "font-size": fs }, svg);
   for (const v of tk) {
     el("line", { x1: ml, x2: W - mr, y1: y(v), y2: y(v) }, grid);
-    el("text", { x: ml - 6, y: y(v) + 4, "text-anchor": "end" }, ax).textContent = fmt(v);
-    el("text", { x: x(v), y: H - mb + 15, "text-anchor": "middle" }, ax).textContent = fmt(v);
+    el("text", { x: ml - 6, y: y(v) + 4, "text-anchor": "end" }, ax).textContent = num(v);
+    el("text", { x: x(v), y: H - mb + 15, "text-anchor": "middle" }, ax).textContent = num(v);
   }
   el("text", { x: (ml + W - mr) / 2, y: H - 3, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
-    .textContent = "age (days since in progress)";
+    .textContent = L.x;
   const cy = (mt + H - mb) / 2;
   el("text", { x: 9, y: cy, transform: `rotate(-90 9 ${cy})`, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
-    .textContent = "days in current state";
+    .textContent = L.y;
 
   el("line", { x1: x(0), y1: y(0), x2: x(m), y2: y(m), class: "diag" }, svg);
   const thr = opts.thresholdDays;
   if (thr < m) {
     el("line", { x1: ml, x2: W - mr, y1: y(thr), y2: y(thr), class: "thr" }, svg);
     el("text", { x: W - mr - 4, y: y(thr) - 5, "text-anchor": "end", class: "thr-label", "font-size": fs }, svg)
-      .textContent = `${thresholdLabel(thr)} in the same state`;
+      .textContent = L.threshold(thr);
   }
   el("line", { x1: ml, x2: W - mr, y1: y(0), y2: y(0), class: "base" }, svg);
 

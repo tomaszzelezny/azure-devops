@@ -126,7 +126,9 @@ select, .btn {
   border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px;
 }
 .btn { cursor: pointer; }
-.btn:hover { background: var(--chip); }
+.btn:hover:not(:disabled) { background: var(--chip); }
+.btn:disabled { cursor: default; color: var(--muted); }
+.buttons { display: flex; gap: 6px; }
 select:focus-visible, .btn:focus-visible, .chip:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {

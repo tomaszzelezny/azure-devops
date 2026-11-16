@@ -23,6 +23,11 @@ export function getWebContext() {
   };
 }
 
+/** Only what the extension reads: the user's language (?culture=pl-PL; default en-US). */
+export function getPageContext() {
+  return { globalization: { culture: mock.culture } };
+}
+
 export function getExtensionContext() {
   return { id: `${manifest.publisher}.${manifest.id}`, publisherId: manifest.publisher, extensionId: manifest.id, version: manifest.version };
 }

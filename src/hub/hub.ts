@@ -1,12 +1,14 @@
 import * as SDK from "azure-devops-extension-sdk";
 import { renderAgingChart, renderLegend, esc } from "../core/chart.ts";
 import {
-  effectiveStates, effectiveTypes, seriesFor, wipStatesOf, takeaway, toPoints, type AgingPoint,
+  effectiveStates, effectiveTypes, reportStats, seriesFor, wipStatesOf, takeaway, toPoints, type AgingPoint, type StateSeries,
 } from "../core/compute.ts";
 import { loadProjectMeta, loadTeams, loadWipItems } from "../core/data.ts";
 import { openWorkItem } from "../core/navigation.ts";
 import { watchTheme } from "../core/theme.ts";
 import { checkboxes } from "../core/ui.ts";
+import { LOCALE, REPORT_TEXTS, langOf } from "../core/i18n.ts";
+import { CHART_WIDTH, COLOR_TOKENS, download, reportFileName, reportSvg, toPng, type Colors } from "../core/report.ts";
 import { DEFAULT_SETTINGS, type AgingSettings, type ProjectMeta, type WipItem } from "../core/types.ts";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -17,6 +19,9 @@ let settings: AgingSettings = { ...DEFAULT_SETTINGS };
 let items: WipItem[] = [];
 const hidden = new Set<string>();
 let loadSeq = 0;
+/** What the chart shows right now; the report is made from exactly this. */
+let view: { points: AgingPoint[]; series: StateSeries[] } = { points: [], series: [] };
+let teamName = "";
 
 const storeKey = () => `aging-wip:${project.id}`;
 
@@ -53,6 +58,7 @@ function status(msg: string, err = false): void {
   s.className = err ? "status err" : "status loading";
   s.hidden = !msg;
   $("result").hidden = !!msg;
+  if (msg) exportState(false);
 }
 
 async function reload(): Promise<void> {
@@ -87,6 +93,46 @@ function draw(): void {
   renderAgingChart($("chart"), shown, visible, { height: H, thresholdDays: settings.thresholdDays, onOpen: openWorkItem });
   $("take").innerHTML = takeaway(shown, settings.thresholdDays);
   renderTable(shown);
+  view = { points: shown, series: visible };
+  exportState(shown.length > 0);
+}
+
+function exportState(enabled: boolean): void {
+  const b = $("export") as HTMLButtonElement;
+  b.disabled = !enabled;
+  b.title = enabled ? "Download the chart with its summary numbers as a PNG image" : "No work items to report";
+}
+
+/** The report: chart, numbers and filters as one PNG, in the user's Azure DevOps language. */
+async function exportReport(): Promise<void> {
+  const { points, series } = view;
+  if (!points.length) return;
+  const lang = langOf(SDK.getPageContext()?.globalization?.culture);
+  const texts = REPORT_TEXTS[lang], locale = LOCALE[lang];
+  const height = 420;
+  const host = document.createElement("div");
+  renderAgingChart(host, points, series, {
+    height, width: CHART_WIDTH, thresholdDays: settings.thresholdDays, locale,
+    labels: { x: texts.xAxis, y: texts.yAxis, threshold: (d) => texts.thresholdLine.replace("{t}", texts.thresholdName(d)) },
+  });
+  const chartSvg = host.querySelector("svg")!;
+  chartSvg.querySelector('rect[fill="transparent"]')?.remove(); // the hover area
+  const css = getComputedStyle(document.documentElement);
+  const colors = Object.fromEntries(COLOR_TOKENS.map((t) => [t, css.getPropertyValue(`--${t}`).trim()])) as Colors;
+  const now = new Date();
+  const { svg, width, height: h } = reportSvg({
+    texts, locale, now, colors,
+    project: project.name,
+    team: teamName,
+    types: effectiveTypes(settings, meta),
+    states: series.map((s) => s.name),
+    thresholdDays: settings.thresholdDays,
+    includeCurrentIteration: settings.includeCurrentIteration,
+    version: SDK.getExtensionContext().version,
+    stats: reportStats(points, series, settings.thresholdDays),
+    chart: { markup: chartSvg.innerHTML, height },
+  });
+  download(await toPng(svg, width, h), reportFileName(project.name, now));
 }
 
 /** Rows the item list shows until the user asks for all of them. */
@@ -126,7 +172,9 @@ async function main(): Promise<void> {
     teams.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("");
   if (!teams.some((t) => t.id === settings.teamId)) settings.teamId = "";
   team.value = settings.teamId;
-  team.addEventListener("change", () => { settings = { ...settings, teamId: team.value }; persist(); void reload(); });
+  const syncTeamName = () => { teamName = team.value ? team.selectedOptions[0]?.textContent ?? "" : ""; };
+  syncTeamName();
+  team.addEventListener("change", () => { settings = { ...settings, teamId: team.value }; syncTeamName(); persist(); void reload(); });
 
   $("threshold").addEventListener("change", (e) => {
     settings = { ...settings, thresholdDays: Number((e.target as HTMLSelectElement).value) };
@@ -137,6 +185,9 @@ async function main(): Promise<void> {
     persist(); void reload();
   });
   $("refresh").addEventListener("click", () => void reload());
+  $("export").addEventListener("click", () => {
+    exportReport().catch((e) => status(`Could not create the report: ${e instanceof Error ? e.message : String(e)}`, true));
+  });
   $("more").addEventListener("click", () => { showAll = !showAll; draw(); });
   $("table").addEventListener("click", (e) => {
     const id = (e.target as HTMLElement).closest("a")?.dataset.id;
