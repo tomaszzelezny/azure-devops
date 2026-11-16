@@ -82,7 +82,7 @@ npm run package
 
 Then upload `out/*.vsix` with **Update** in the publisher portal.
 
-Or from GitHub: the **Package** workflow runs on every merge to `main` (public build) and on demand from **Actions → Package → Run workflow**. Each run releases a new version: if the current version already has a `vX.Y.Z` tag, the workflow bumps the patch number and commits it, then builds the `.vsix`, tags the version and attaches the `.vsix` as a plain file to the `vX.Y.Z` GitHub Release (private builds are marked pre-release). For a minor or major bump, merge `npm run version:bump -- minor` (the merge itself releases that version). The workflow's own `Release vX.Y.Z [skip ci]` commit does not trigger another release. Release notes for a version go in `release-notes/vX.Y.Z.md` (merged together with the version bump); the GitHub Release shows them above the generated list of pull requests.
+Or from GitHub: a release is a pull request that bumps the version (`npm run version:bump`, `-- minor|major` as needed) and adds `release-notes/vX.Y.Z.md`. When it merges, the **Package** workflow sees an untagged version, builds the public `.vsix`, tags `vX.Y.Z` and attaches the `.vsix` as a plain file to the GitHub Release, with the notes above the generated list of pull requests. Merges that keep an already released version release nothing. **Actions → Package → Run workflow** releases the current version on demand (public or private; private builds are marked pre-release) and fails if it is already tagged. The workflow never pushes commits, because `main` only takes changes through pull requests.
 
 ## Publish and install
 
