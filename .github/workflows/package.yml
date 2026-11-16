@@ -73,4 +73,6 @@ jobs:
         run: |
           flags=()
           [ "$VISIBILITY" = private ] && flags+=(--prerelease)
+          # Hand-written notes (release-notes/vX.Y.Z.md) go first; GitHub appends the generated PR list.
+          [ -f "release-notes/v$VERSION.md" ] && flags+=(--notes-file "release-notes/v$VERSION.md")
           gh release create "v$VERSION" out/*.vsix --title "v$VERSION ($VISIBILITY)" --generate-notes "${flags[@]}"
