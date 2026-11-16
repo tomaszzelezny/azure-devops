@@ -72,24 +72,15 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
   const dot = (x: number, y: number, color: number) => parts.push(`<circle cx="${x}" cy="${y}" r="4.5" fill="var(--c${color})"/>`);
   const colorOf = new Map(s.byState.map((b) => [b.name, b.color]));
 
-  // Header: title, filters, date of the data.
+  // Header: title; scope (project, team, threshold, iteration); filters (types, states). The date goes in the footer.
   let y = P + 22;
   text(P, y, esc(T.title), `font-size="22" font-weight="600" fill="var(--ink)"`);
-  const meta: [string, string][] = [
-    [T.project, r.project],
-    [T.team, r.team || T.entireProject],
-    [T.types, r.types.join(", ")],
-    [T.states, r.states.join(", ")],
-    [T.threshold, thr],
-  ];
-  const metaLine = meta.map(([k, v]) => `<tspan fill="var(--ink-2)">${esc(k)}: </tspan><tspan fill="var(--ink)" font-weight="600">${esc(clip(v, 60))}</tspan>`)
-    .join(`<tspan>   </tspan>`) + `<tspan fill="var(--ink-2)">   ${esc(r.includeCurrentIteration ? T.currentIncluded : T.currentExcluded)}</tspan>`;
-  text(P, y + 24, metaLine, `font-size="13" xml:space="preserve"`);
-  const date = r.now.toLocaleDateString(r.locale, { day: "numeric", month: "long", year: "numeric" }) + ", " +
-    r.now.toLocaleTimeString(r.locale, { hour: "2-digit", minute: "2-digit" });
-  text(REPORT_WIDTH - P, y + 4, esc(T.asOf), `font-size="13" text-anchor="end" fill="var(--ink-2)"`);
-  text(REPORT_WIDTH - P, y + 24, esc(date), `font-size="14" font-weight="600" text-anchor="end" fill="var(--ink)"`);
-  y += 42;
+  const kv = (k: string, v: string) => `<tspan fill="var(--ink-2)">${esc(k)}: </tspan><tspan fill="var(--ink)" font-weight="600">${esc(clip(v, 70))}</tspan>`;
+  const sep = `<tspan fill="var(--muted)">   ·   </tspan>`;
+  const iteration = `<tspan fill="var(--ink-2)">${esc(r.includeCurrentIteration ? T.currentIncluded : T.currentExcluded)}</tspan>`;
+  text(P, y + 26, [kv(T.project, r.project), kv(T.team, r.team || T.entireProject), kv(T.threshold, thr), iteration].join(sep), `font-size="13" xml:space="preserve"`);
+  text(P, y + 46, [kv(T.types, r.types.join(", ")), kv(T.states, r.states.join(", "))].join(sep), `font-size="13" xml:space="preserve"`);
+  y += 62;
   hline(P, REPORT_WIDTH - P, y);
 
   // Summary tiles.
@@ -163,7 +154,10 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
     s.longest.map((p) => ({ cells: [`#${p.item.id}`, clip(p.item.title, 38), p.item.state, n(p.inState), n(p.age)], color: colorOf.get(p.item.state) ?? 0, mono0: true })));
   y = Math.max(leftEnd, rightEnd) + 28;
 
-  text(P, y, esc(`${T.generated} · v${r.version}`), `font-size="11.5" fill="var(--muted)"`);
+  const date = r.now.toLocaleDateString(r.locale, { day: "numeric", month: "long", year: "numeric" }) + ", " +
+    r.now.toLocaleTimeString(r.locale, { hour: "2-digit", minute: "2-digit" });
+  text(P, y, `<tspan fill="var(--ink-2)">${esc(T.asOf)}: </tspan><tspan fill="var(--ink)" font-weight="600">${esc(date)}</tspan>`, `font-size="12.5" xml:space="preserve"`);
+  text(REPORT_WIDTH - P, y, esc(`${T.generated} · v${r.version}`), `font-size="11.5" fill="var(--muted)" text-anchor="end"`);
   const height = y + 20;
 
   const vars = Object.entries(r.colors).map(([k, v]) => `--${k}:${v}`).join(";");

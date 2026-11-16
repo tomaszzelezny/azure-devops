@@ -79,6 +79,10 @@ test("the report SVG is in the chosen language, with filters, numbers and the ch
     assert.ok(en.includes(s), `EN report contains "${s}"`);
   }
   assert.ok(!en.includes("Raport"));
+  // The date of the data sits in the footer, after the tables.
+  const footer = pl.slice(pl.indexOf("Dane z dnia"));
+  assert.ok(pl.indexOf("Dane z dnia") > pl.indexOf("Najdłużej w obecnym stanie"));
+  assert.ok(footer.includes("1 października 2026"), footer.slice(0, 300));
 });
 
 test("the report escapes work item titles and names", () => {

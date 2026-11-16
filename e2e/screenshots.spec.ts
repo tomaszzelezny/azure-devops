@@ -29,7 +29,9 @@ for (const theme of ["light", "dark"] as const) {
     test(`report ${culture} ${theme} @screenshot`, async ({ page }) => {
       await page.goto(`hub.html?theme=${theme}&culture=${culture}`);
       await expect(page.locator("#status")).toBeHidden();
-      const [file] = await Promise.all([page.waitForEvent("download"), page.click("#export")]);
+      await page.click("#export");
+      const language = culture === "pl-PL" ? "Polski" : "English";
+      const [file] = await Promise.all([page.waitForEvent("download"), page.locator("#export-langs button", { hasText: language }).click()]);
       await file.saveAs(`screenshots/report-${culture}-${theme}.png`);
     });
   }

@@ -7,7 +7,7 @@ import { loadProjectMeta, loadTeams, loadWipItems } from "../core/data.ts";
 import { openWorkItem } from "../core/navigation.ts";
 import { watchTheme } from "../core/theme.ts";
 import { checkboxes } from "../core/ui.ts";
-import { LOCALE, REPORT_TEXTS, langOf } from "../core/i18n.ts";
+import { LANG_NAMES, LANGS, LOCALE, REPORT_TEXTS, langOf, type Lang } from "../core/i18n.ts";
 import { CHART_WIDTH, COLOR_TOKENS, download, reportFileName, reportSvg, toPng, type Colors } from "../core/report.ts";
 import { DEFAULT_SETTINGS, type AgingSettings, type ProjectMeta, type WipItem } from "../core/types.ts";
 
@@ -100,14 +100,14 @@ function draw(): void {
 function exportState(enabled: boolean): void {
   const b = $("export") as HTMLButtonElement;
   b.disabled = !enabled;
+  if (!enabled) closeLangMenu();
   b.title = enabled ? "Download the chart with its summary numbers as a PNG image" : "No work items to report";
 }
 
 /** The report: chart, numbers and filters as one PNG, in the user's Azure DevOps language. */
-async function exportReport(): Promise<void> {
+async function exportReport(lang: Lang): Promise<void> {
   const { points, series } = view;
   if (!points.length) return;
-  const lang = langOf(SDK.getPageContext()?.globalization?.culture);
   const texts = REPORT_TEXTS[lang], locale = LOCALE[lang];
   const height = 420;
   const host = document.createElement("div");
@@ -133,6 +133,46 @@ async function exportReport(): Promise<void> {
     chart: { markup: chartSvg.innerHTML, height },
   });
   download(await toPng(svg, width, h), reportFileName(project.name, now));
+}
+
+/** Language picker under the Download report button; the user's Azure DevOps language comes first. */
+let langMenu: HTMLDivElement | undefined;
+
+function closeLangMenu(): void {
+  langMenu?.remove();
+  langMenu = undefined;
+  document.removeEventListener("mousedown", onOutsideLangMenu, true);
+  document.removeEventListener("keydown", onEscapeLangMenu, true);
+}
+function onOutsideLangMenu(e: MouseEvent): void {
+  if (langMenu && !langMenu.contains(e.target as Node) && e.target !== $("export")) closeLangMenu();
+}
+function onEscapeLangMenu(e: KeyboardEvent): void { if (e.key === "Escape") closeLangMenu(); }
+
+function openLangMenu(): void {
+  if (langMenu) return closeLangMenu();
+  const own = langOf(SDK.getPageContext()?.globalization?.culture);
+  const langs = [own, ...LANGS.filter((l) => l !== own)];
+  const button = $("export");
+  langMenu = document.createElement("div");
+  langMenu.className = "tip menu lang-menu";
+  langMenu.id = "export-langs";
+  langMenu.setAttribute("role", "menu");
+  langMenu.innerHTML = `<div class="t">Report language</div>` +
+    langs.map((l) => `<button type="button" class="it" role="menuitem" data-lang="${l}">${esc(LANG_NAMES[l])}</button>`).join("");
+  document.body.appendChild(langMenu);
+  const r = button.getBoundingClientRect();
+  langMenu.style.left = `${Math.max(8, Math.min(r.left, innerWidth - langMenu.offsetWidth - 8))}px`;
+  langMenu.style.top = `${r.bottom + 4}px`;
+  langMenu.addEventListener("click", (e) => {
+    const lang = (e.target as HTMLElement).closest<HTMLElement>("[data-lang]")?.dataset.lang as Lang | undefined;
+    if (!lang) return;
+    closeLangMenu();
+    exportReport(lang).catch((err) => status(`Could not create the report: ${err instanceof Error ? err.message : String(err)}`, true));
+  });
+  document.addEventListener("mousedown", onOutsideLangMenu, true);
+  document.addEventListener("keydown", onEscapeLangMenu, true);
+  langMenu.querySelector("button")?.focus();
 }
 
 /** Rows the item list shows until the user asks for all of them. */
@@ -185,9 +225,7 @@ async function main(): Promise<void> {
     persist(); void reload();
   });
   $("refresh").addEventListener("click", () => void reload());
-  $("export").addEventListener("click", () => {
-    exportReport().catch((e) => status(`Could not create the report: ${e instanceof Error ? e.message : String(e)}`, true));
-  });
+  $("export").addEventListener("click", openLangMenu);
   $("more").addEventListener("click", () => { showAll = !showAll; draw(); });
   $("table").addEventListener("click", (e) => {
     const id = (e.target as HTMLElement).closest("a")?.dataset.id;

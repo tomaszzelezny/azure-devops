@@ -48,3 +48,10 @@ export const chipLabels = (page: Page, id: string) =>
   page.locator(`#${id} label`).evaluateAll((ls) => ls.map((l) => `${l.textContent}${(l.querySelector("input") as HTMLInputElement).checked ? "" : " (off)"}`));
 
 export const dots = (page: Page) => page.locator("#chart circle.dot");
+
+/** Clicks Download report, picks the report language and returns the download. */
+export async function downloadReport(page: Page, language: "English" | "Polski" = "English") {
+  await page.click("#export");
+  const [file] = await Promise.all([page.waitForEvent("download"), page.locator("#export-langs button", { hasText: language }).click()]);
+  return file;
+}

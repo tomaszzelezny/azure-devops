@@ -18,7 +18,7 @@ UI text is English. Conversation with the owner is usually in Polish.
 - `src/core/compute.ts` – pure logic (defaults, state categories, history scan, summary). Unit-test anything added here.
 - `src/core/data.ts` – REST calls (WIQL → workitemsbatch → per-item updates). `ado.ts` adds auth and `api-version=7.1`.
 - `src/core/chart.ts` – SVG chart, tooltip, legend. No chart library.
-- `src/core/report.ts` – the "Download report" PNG (pure SVG string → canvas). Its texts are in `src/core/i18n.ts` (EN/PL by `getPageContext().globalization.culture`; mock: `?culture=pl-PL`). The rest of the UI stays English.
+- `src/core/report.ts` – the "Download report" PNG (pure SVG string → canvas). Its texts are in `src/core/i18n.ts` (EN/PL, picked in a menu under the button; the language of `getPageContext().globalization.culture` comes first; mock: `?culture=pl-PL`). The rest of the UI stays English.
 - `src/hub/`, `src/widget/` – page controllers. `static/` – HTML/CSS copied into `dist/`.
 - `dev/mock/` – the fake host: `sdk.ts` replaces `azure-devops-extension-sdk` (esbuild alias in `build.mjs --mock`), `api.ts` fakes the REST endpoints and really evaluates the WIQL, `scenarios.ts` holds deterministic data, `state.ts` reads URL params and exposes `window.__mock`.
 
