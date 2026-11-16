@@ -44,10 +44,10 @@ test.describe("hub · agile process", () => {
     await openHub(page);
     const box = page.locator("#current-iteration");
     await expect(box).toBeChecked();
-    // Its own row, above the type and state filters.
-    const iterRow = (await box.locator("xpath=ancestor::div[contains(@class,'controls')]").boundingBox())!;
-    const typesTop = (await page.locator("#types").boundingBox())!.y;
-    expect(iterRow.y + iterRow.height).toBeLessThanOrEqual(typesTop);
+    // Next to the threshold, in the first row: takes no extra screen space.
+    const row = (sel: string) => page.locator(`.controls:has(${sel})`);
+    await expect(row("#current-iteration")).toHaveCount(1);
+    expect(await row("#current-iteration").evaluate((r) => r.contains(document.getElementById("threshold")))).toBe(true);
     expect(await lastWiql(page)).not.toContain("System.IterationPath");
     expect((await calls(page)).some((c) => c.path.includes("teamsettings/iterations"))).toBe(false);
     expect(await hubRow(page, ANCHORS.fresh)).toBeDefined();
