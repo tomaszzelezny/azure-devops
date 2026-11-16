@@ -43,6 +43,7 @@ function renderControls(): void {
     persist(); renderControls(); void reload();
   });
   ($("threshold") as HTMLSelectElement).value = String(settings.thresholdDays);
+  ($("current-iteration") as HTMLInputElement).checked = settings.includeCurrentIteration;
 }
 
 /** Shows a message instead of the result: a spinner while loading, red text for errors, nothing once loaded. */
@@ -58,8 +59,10 @@ async function reload(): Promise<void> {
   const seq = ++loadSeq;
   status("Loading work items…");
   try {
-    const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta), meta,
-      (done, total) => { if (seq === loadSeq) status(`Reading work item history… ${done} / ${total}`); });
+    const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta), meta, {
+      includeCurrentIteration: settings.includeCurrentIteration,
+      onProgress: (done, total) => { if (seq === loadSeq) status(`Reading work item history… ${done} / ${total}`); },
+    });
     if (seq !== loadSeq) return; // a newer request superseded this one
     items = got;
     status("");
@@ -96,10 +99,10 @@ function renderTable(points: AgingPoint[]): void {
   $("items").hidden = !top.length;
   $("table").innerHTML =
     `<table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>State</th>` +
-    `<th class="num">In state (days)</th><th class="num">Age (days)</th><th>Assigned to</th></tr></thead><tbody>` +
+    `<th class="num">In state (days)</th><th class="num">Age (days)</th><th>Assigned to</th><th>Iteration path</th></tr></thead><tbody>` +
     top.map((p, i) => `<tr${i >= PREVIEW_ROWS && !showAll ? " hidden" : ""}><td><a data-id="${p.item.id}" class="mono">${p.item.id}</a></td><td>${esc(p.item.title)}</td>` +
       `<td>${esc(p.item.type)}</td><td>${esc(p.item.state)}</td><td class="num">${n(p.inState)}</td>` +
-      `<td class="num">${n(p.age)}</td><td>${esc(p.item.assignedTo)}</td></tr>`).join("") +
+      `<td class="num">${n(p.age)}</td><td>${esc(p.item.assignedTo)}</td><td>${esc(p.item.iterationPath)}</td></tr>`).join("") +
     `</tbody></table>`;
   const more = $("more") as HTMLButtonElement;
   more.hidden = top.length <= PREVIEW_ROWS;
@@ -128,6 +131,10 @@ async function main(): Promise<void> {
   $("threshold").addEventListener("change", (e) => {
     settings = { ...settings, thresholdDays: Number((e.target as HTMLSelectElement).value) };
     persist(); draw();
+  });
+  $("current-iteration").addEventListener("change", (e) => {
+    settings = { ...settings, includeCurrentIteration: (e.target as HTMLInputElement).checked };
+    persist(); void reload();
   });
   $("refresh").addEventListener("click", () => void reload());
   $("more").addEventListener("click", () => { showAll = !showAll; draw(); });

@@ -36,12 +36,12 @@ export async function openHub(page: Page, query = "") {
   await expect(page.locator("#status")).toBeHidden();
 }
 
-/** Row of the hub's "Longest in current state" table: { inState, age } in days, or undefined when absent. */
+/** Row of the hub's "Longest in current state" table: { inState, age } in days, iteration path, or undefined when absent. */
 export async function hubRow(page: Page, id: number) {
   const row = page.locator("#table tr", { has: page.locator(`a[data-id="${id}"]`) });
   if (!(await row.count())) return undefined;
   const cells = await row.locator("td").allTextContents();
-  return { title: cells[1], type: cells[2], state: cells[3], inState: Number(cells[4].replace(/\D/g, "")), age: Number(cells[5].replace(/\D/g, "")) };
+  return { title: cells[1], type: cells[2], state: cells[3], inState: Number(cells[4].replace(/\D/g, "")), age: Number(cells[5].replace(/\D/g, "")), iteration: cells[7] };
 }
 
 export const chipLabels = (page: Page, id: string) =>

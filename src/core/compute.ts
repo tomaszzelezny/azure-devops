@@ -141,6 +141,11 @@ export function escapeWiql(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
 
+/** WIQL clause leaving out an iteration (and its children); empty when there is none to leave out. */
+export function excludeIterationClause(path?: string): string {
+  return path ? ` AND [System.IterationPath] NOT UNDER ${escapeWiql(path)}` : "";
+}
+
 export function thresholdLabel(days: number): string {
   if (days === 365) return "1 year";
   if (days === 730) return "2 years";

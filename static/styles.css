@@ -118,6 +118,9 @@ button.lg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; 
 .controls { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-start; margin-bottom: 16px; }
 .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .field > span { font-size: 12px; color: var(--muted); }
+/* A checkbox in a row of selects: same height as its row, centred on the selects. */
+.controls > .field.inline { align-self: stretch; }
+.controls > .field.inline > .chips { flex: 1; align-items: center; }
 select, .btn {
   font: inherit; color: var(--ink); background: var(--surface);
   border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px;

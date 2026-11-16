@@ -8,6 +8,8 @@ export interface AgingSettings {
   states: string[];
   /** Red reference line: "N days in the same state". */
   thresholdDays: number;
+  /** When false, items in the team's current iteration (the default team's, for the whole project) are left out. */
+  includeCurrentIteration: boolean;
 }
 
 export const DEFAULT_SETTINGS: AgingSettings = {
@@ -15,6 +17,7 @@ export const DEFAULT_SETTINGS: AgingSettings = {
   types: [],
   states: [],
   thresholdDays: 365,
+  includeCurrentIteration: true,
 };
 
 export interface StateMeta {
@@ -47,6 +50,7 @@ export interface WipItem {
   type: string;
   state: string;
   assignedTo: string;
+  iterationPath: string;
   createdDate: Date;
   /** When work started: first entry into an InProgress or Resolved state. */
   startedDate: Date;
