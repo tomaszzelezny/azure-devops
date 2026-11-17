@@ -97,14 +97,15 @@ const input = (lang: "en" | "pl", over: Partial<ReportInput> = {}): ReportInput 
 
 test("the report SVG is in the chosen language, with filters, numbers and the chart", () => {
   const pl = reportSvg(input("pl")).svg;
-  for (const s of ["Mediana w stanie", "P85 w stanie", "Maks. w stanie", "Raport Aging WIP", "Cały projekt", "bez bieżącej iteracji", "Próg: ", "1 rok", "Mediana wieku", "Najdłużej w obecnym stanie", "<g id=chart></g>", "v1.2.1"]) {
+  for (const s of ["Dni od rozpoczęcia pracy", "Dni w obecnym stanie", "Według stanu · dni w obecnym stanie", "Najdawniej rozpoczęty", "Od startu", "Raport Aging WIP", "Cały projekt", "bez bieżącej iteracji", "Próg: ", "1 rok", "Najdłużej w obecnym stanie", "<g id=chart></g>", "v1.2.1"]) {
     assert.ok(pl.includes(s), `PL report contains "${s}"`);
   }
   const en = reportSvg(input("en", { team: "Team A", includeCurrentIteration: true })).svg;
-  for (const s of ["Median in state", "P85 in state", "Max in state", "Aging WIP report", "Team A", "current iteration included", "Median age", "more than 1 year in one state"]) {
+  for (const s of ["Days since work started", "Days in the current state", "By state · days in the current state", "Started longest ago", "Since start", "Aging WIP report", "Team A", "current iteration included", "more than 1 year in one state"]) {
     assert.ok(en.includes(s), `EN report contains "${s}"`);
   }
   assert.ok(!en.includes("Raport"));
+  assert.ok(pl.includes("#5 · 30 w stanie"), "the oldest item also shows its days in state");
   // The date of the data sits in the footer, after the tables.
   const footer = pl.slice(pl.indexOf("Dane z dnia"));
   assert.ok(pl.indexOf("Dane z dnia") > pl.indexOf("Najdłużej w obecnym stanie"));

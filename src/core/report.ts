@@ -83,18 +83,27 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
   y += 62;
   hline(P, REPORT_WIDTH - P, y);
 
-  // Summary tiles.
-  y += 16;
   const gap = 10, tw = (INNER - 5 * gap) / 6, th = 104;
+  // Summary tiles, grouped by measure: tiles 2–4 count days since work started, 5–6 days in the current state.
+  y += 16;
+  const groupCaption = (from: number, to: number, label: string) => {
+    const x1 = P + from * (tw + gap), x2 = P + (to + 1) * (tw + gap) - gap;
+    text(x1, y + 10, esc(label), `font-size="11.5" font-weight="600" fill="var(--muted)" letter-spacing=".3"`);
+    parts.push(`<line x1="${x1}" x2="${x2}" y1="${y + 17}" y2="${y + 17}" stroke="var(--axis)"/>`);
+  };
+
   const ofTotal = (v: number) => `${n(v)}<tspan font-size="13" font-weight="400" fill="var(--ink-2)"> ${esc(T.of)} ${n(s.total)}</tspan>`;
   const tiles: { k: string; v: string; u: string; crit?: boolean }[] = [
     { k: T.items, v: n(s.total), u: "" },
     { k: T.medianAge, v: n(s.medianAge), u: T.days },
     { k: T.p85Age, v: n(s.p85Age), u: T.days },
-    { k: T.oldest, v: s.oldest ? n(s.oldest.age) : "–", u: s.oldest ? `${T.days} · #${s.oldest.item.id}` : "" },
+    { k: T.oldest, v: s.oldest ? n(s.oldest.age) : "–", u: s.oldest ? `${T.days} · #${s.oldest.item.id} · ${T.oldestInState.replace("{n}", n(s.oldest.inState))}` : "" },
     { k: T.over, v: ofTotal(s.overThreshold), u: T.overNote.replace("{t}", thr), crit: true },
     { k: T.fresh, v: ofTotal(s.fresh), u: "" },
   ];
+  groupCaption(1, 3, T.groupSinceStart);
+  groupCaption(4, 5, T.groupInState);
+  y += 26;
   tiles.forEach((t, i) => {
     const x = P + i * (tw + gap);
     rect(x, y, tw, th);

@@ -29,7 +29,7 @@ export interface ChartOptions {
   locale?: string;
 }
 
-const LABELS = { x: "age (days since in progress)", y: "days in current state", threshold: (d: number) => `${thresholdLabel(d)} in the same state` };
+const LABELS = { x: "days since work started", y: "days in current state", threshold: (d: number) => `${thresholdLabel(d)} in the same state` };
 
 let tip: HTMLDivElement | undefined;
 
@@ -175,8 +175,8 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
     `<i style="background:${color.get(it.state)}"></i><span class="mono">#${it.id}</span><span class="ti">${esc(it.title)}</span></${tag}>`;
   const head = (g: AgingPoint[]) =>
     `<div class="t">${g.length} items on this spot</div>` +
-    row("Age", `${fmt(g[0].age)} days`) +
-    row("In current state", `${fmt(g[0].inState)} days`);
+    row("Since start", `${fmt(g[0].age)} days`) +
+    row("In state", `${fmt(g[0].inState)} days`);
 
   let current: Placed | undefined;
   hit.addEventListener("mousemove", (ev) => {
@@ -198,8 +198,8 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
       `<div class="t"><span class="mono">#${it.id}</span> ${esc(it.title)}</div>` +
       row("Type", it.type) +
       row("State", it.state, color.get(it.state)) +
-      row("Age", `${fmt(g[0].age)} days`) +
-      row("In current state", `${fmt(g[0].inState)} days`) +
+      row("Since start", `${fmt(g[0].age)} days`) +
+      row("In state", `${fmt(g[0].inState)} days`) +
       (it.assignedTo ? row("Assigned to", it.assignedTo) : ""));
   });
   hit.addEventListener("mouseleave", () => { current = undefined; hideTip(); });
