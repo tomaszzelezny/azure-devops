@@ -256,12 +256,20 @@ test.describe("hub · agile process", () => {
 test.describe("hub · requests that never answer", () => {
   const historyOf = async (page: import("@playwright/test").Page, id: number) =>
     (await calls(page)).filter((c) => c.path.startsWith(`_apis/wit/workItems/${id}/updates`));
+  /**
+   * Waits until every item but the stalled one is read: the loader shows "N-1 / N", as reported in v1.2.3.
+   * The first progress update is not enough: under load the stalled request may not have been sent yet,
+   * and moving the fake clock while other requests are in flight would time those out too.
+   */
+  const stalledOnLastItem = (page: import("@playwright/test").Page) => expect.poll(async () => {
+    const m = (await page.locator("#status").textContent())?.match(/Reading work item history… (\d+) \/ (\d+)/);
+    return m ? Number(m[2]) - Number(m[1]) : undefined;
+  }, { message: "all items but the stalled one are read" }).toBe(1);
 
   test("a history request that never answers is cancelled and retried, so the loader does not hang", async ({ page }) => {
     await page.clock.install();
     await page.goto(`hub.html?stall=${ANCHORS.restarted}`);
-    // Everything but the stalled item is read: the loader waits at "N-1 / N", as reported in v1.2.3.
-    await expect(page.locator("#status")).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await stalledOnLastItem(page);
     await page.clock.runFor(29_000);
     await expect(page.locator("#status")).toBeVisible();
 
@@ -276,7 +284,7 @@ test.describe("hub · requests that never answer", () => {
     await page.clock.install();
     await page.goto(`hub.html?stall=${ANCHORS.restarted}:3`); // every attempt stalls
     const status = page.locator("#status");
-    await expect(status).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await stalledOnLastItem(page);
     await expect(page.locator("#reload-page")).toHaveCount(0);
 
     await page.clock.runFor(46_000); // no progress for 45 s
@@ -296,7 +304,7 @@ test.describe("hub · requests that never answer", () => {
 
   test("changing filters mid-load cancels the old load and shows the new one", async ({ page }) => {
     await page.goto(`hub.html?stall=${ANCHORS.restarted}`);
-    await expect(page.locator("#status")).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await stalledOnLastItem(page);
     await page.locator("#types label", { hasText: "Bug" }).click();
 
     await expect(page.locator("#status")).toBeHidden();
