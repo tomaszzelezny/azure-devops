@@ -33,7 +33,7 @@ test.describe("hub · agile process", () => {
 
   test("table columns: no Assigned to; the last one shows the iteration path", async ({ page }) => {
     await openHub(page);
-    await expect(page.locator("#table th")).toHaveText(["ID", "Title", "Type", "State", "In state (days)", "Age (days)", "Iteration path"]);
+    await expect(page.locator("#table th")).toHaveText(["ID", "Title", "Type", "State", "Days in state", "Days since start", "Iteration path"]);
     expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ iteration: "Demo\\Sprint 3" });
     expect(await hubRow(page, ANCHORS.fresh)).toMatchObject({ iteration: "Demo\\Sprint 12" });
     const batch = (await calls(page)).find((c) => c.path.includes("workitemsbatch"))!;
