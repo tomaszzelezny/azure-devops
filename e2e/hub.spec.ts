@@ -400,6 +400,48 @@ test.describe("hub · other processes and failures", () => {
     await expect(dots(page).first()).toBeVisible();
   });
 
+  test("a web page instead of data (sign-in page, HTTP 203) is retried; the load then succeeds", async ({ page }) => {
+    // As in v1.2.3 right after a type change: the WIQL call got HTML and the hub showed "Unexpected token '<'".
+    await page.goto("hub.html?html=/_apis/wit/wiql");
+    await expect(page.locator("#status")).toBeHidden({ timeout: 10_000 });
+    expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ age: 450, inState: 400 });
+    expect((await calls(page)).filter((c) => c.path.includes("/_apis/wit/wiql"))).toHaveLength(2);
+  });
+
+  test("a type disabled in the process while the hub is open goes away on Refresh", async ({ page }) => {
+    await openHub(page);
+    expect(await chipLabels(page, "types")).toEqual(["Bug", "Task", "User Story"]);
+    await page.evaluate(() => { (window as any).__mock.scenario.process.types.find((t: any) => t.name === "Task").isDisabled = true; });
+
+    await page.click("#refresh");
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await chipLabels(page, "types")).toEqual(["Bug", "User Story"]);
+    expect(inClause(await lastWiql(page), "System.WorkItemType")).toEqual(["User Story", "Bug"]);
+    expect(await hubRow(page, ANCHORS.task)).toBeUndefined();
+  });
+
+  test("after a failed load the next one reads the work item types again", async ({ page }) => {
+    await page.clock.install();
+    await page.goto("hub.html?html=/_apis/wit/wiql:3");
+    await page.clock.runFor(5_000);
+    await expect(page.locator("#status.err")).toBeVisible();
+    const typeReads = async () => (await calls(page)).filter((c) => c.path.includes("/_apis/wit/workitemtypes?")).length;
+    expect(await typeReads()).toBe(1);
+
+    await page.locator("#types label", { hasText: "Bug" }).click();
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await typeReads()).toBe(2);
+  });
+
+  test("a web page every time ends in a readable error with the reload button, not a JSON parse error", async ({ page }) => {
+    await page.clock.install();
+    await page.goto("hub.html?html=/_apis/wit/wiql:3");
+    await page.clock.runFor(5_000); // pauses of 1 s and 2 s between the attempts
+    await expect(page.locator("#status.err")).toContainText("Azure DevOps answered with a web page instead of data (HTTP 203");
+    await expect(page.locator("#status")).not.toContainText("JSON");
+    await expect(page.locator("#reload-page")).toBeVisible();
+  });
+
   test("API errors are shown to the user", async ({ page }) => {
     await page.goto("hub.html?scenario=error");
     await expect(page.locator("#status .spinner")).toHaveCount(0);

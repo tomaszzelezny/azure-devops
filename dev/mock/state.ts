@@ -9,6 +9,7 @@
  *   &cols=4&rows=3         widget size
  *   &delay=<ms>            every API response waits this long (shows the loader)
  *   &stall=<id>[:<n>],…    the first (n) history requests of these work items never answer
+ *   &html=<path>[:<n>],…   the first (n) calls whose path contains <path> get the sign-in web page (HTTP 203)
  *   &culture=pl-PL         the user's Azure DevOps language (default en-US)
  *
  * Everything is exposed as window.__mock so tests can inspect calls and drive the page.
@@ -30,7 +31,11 @@ const stalled = new Map((params.get("stall") ?? "").split(",").filter(Boolean).m
   const [id, n = "1"] = s.split(":");
   return [Number(id), Number(n)] as [number, number];
 }));
-const api = createMockApi(scenario, project, Date.now(), Number(params.get("delay") ?? 0), stalled);
+const htmlPages = new Map((params.get("html") ?? "").split(",").filter(Boolean).map((s) => {
+  const [path, n = "1"] = s.split(":");
+  return [path, Number(n)] as [string, number];
+}));
+const api = createMockApi(scenario, project, Date.now(), Number(params.get("delay") ?? 0), stalled, htmlPages);
 
 const DARK = `:root{--background-color:#1b1a19;--callout-background-color:#252423;--text-primary-color:rgba(255,255,255,.9);--text-secondary-color:rgba(255,255,255,.6)}`;
 const LIGHT = `:root{--background-color:#ffffff;--callout-background-color:#ffffff;--text-primary-color:rgba(0,0,0,.9);--text-secondary-color:rgba(0,0,0,.55)}`;
@@ -49,6 +54,8 @@ export const mock = {
   calls: api.calls as RecordedCall[],
   /** Work item id → how many of its next history requests never answer (see &stall). */
   stalled: api.stalled,
+  /** Path fragment → how many of the next matching calls get the sign-in web page (see &html). */
+  htmlPages: api.htmlPages,
   opened: [] as number[],
   notifications: [] as Notification[],
   registered: new Map<string, any>(),

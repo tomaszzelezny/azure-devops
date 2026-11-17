@@ -20,6 +20,8 @@ let items: WipItem[] = [];
 const hidden = new Set<string>();
 /** The load in progress; a newer one cancels it so stale requests do not compete with the current ones. */
 let loading: AbortController | undefined;
+/** Read the work item types again before the next load: after Refresh or a failed load (the process may have changed). */
+let metaStale = false;
 /** What the chart shows right now; the report is made from exactly this. */
 let view: { points: AgingPoint[]; series: StateSeries[] } = { points: [], series: [] };
 let teamName = "";
@@ -86,6 +88,13 @@ async function reload(): Promise<void> {
   status(shown);
   watch();
   try {
+    if (metaStale) {
+      const m = await loadProjectMeta(project.id, ctrl.signal);
+      if (!current()) return;
+      meta = m;
+      metaStale = false;
+      renderControls();
+    }
     const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta), meta, {
       includeCurrentIteration: settings.includeCurrentIteration,
       onProgress: (done, total) => {
@@ -103,6 +112,7 @@ async function reload(): Promise<void> {
   } catch (e) {
     if (!current()) return;
     loading = undefined;
+    metaStale = true;
     status(e instanceof Error ? e.message : String(e), true, true);
   } finally {
     clearTimeout(stalled);
@@ -255,7 +265,7 @@ async function main(): Promise<void> {
     settings = { ...settings, includeCurrentIteration: (e.target as HTMLInputElement).checked };
     persist(); void reload();
   });
-  $("refresh").addEventListener("click", () => void reload());
+  $("refresh").addEventListener("click", () => { metaStale = true; void reload(); });
   $("status").addEventListener("click", (e) => { if ((e.target as HTMLElement).closest("#reload-page")) location.reload(); });
   $("export").addEventListener("click", openLangMenu);
   $("more").addEventListener("click", () => { showAll = !showAll; draw(); });
