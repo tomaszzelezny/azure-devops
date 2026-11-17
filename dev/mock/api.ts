@@ -80,10 +80,10 @@ function updates(item: MockItem, now: number) {
 
 /**
  * delayMs: every API response waits this long, to see the loading state.
- * stalled: work item ids whose first history request never answers (like Azure DevOps sometimes does);
+ * stalled: work item id → how many of its next history requests never answer (like Azure DevOps sometimes does);
  * the extension has to cancel it. Tests can add ids at run time.
  */
-export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now(), delayMs = 0, stalled = new Set<number>()) {
+export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now(), delayMs = 0, stalled = new Map<number, number>()) {
   const calls: RecordedCall[] = [];
   const isProject = (seg: string) => seg === project.id || seg === project.name;
 
@@ -160,7 +160,11 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
       const t = ms === undefined ? undefined : setTimeout(resolve, ms);
       signal?.addEventListener("abort", () => { clearTimeout(t); call.aborted = true; reject(signal.reason); }, { once: true });
     });
-    if (stalled.delete(stallId)) await wait();
+    const left = stalled.get(stallId) ?? 0;
+    if (left > 0) {
+      stalled.set(stallId, left - 1);
+      await wait();
+    }
     if (delayMs) await wait(delayMs);
     if (signal?.aborted) { call.aborted = true; throw signal.reason; }
 

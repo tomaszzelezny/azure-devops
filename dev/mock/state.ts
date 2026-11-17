@@ -8,7 +8,7 @@
  *   &name=<text>           widget title
  *   &cols=4&rows=3         widget size
  *   &delay=<ms>            every API response waits this long (shows the loader)
- *   &stall=<id>,<id>       the first history request of these work items never answers
+ *   &stall=<id>[:<n>],…    the first (n) history requests of these work items never answer
  *   &culture=pl-PL         the user's Azure DevOps language (default en-US)
  *
  * Everything is exposed as window.__mock so tests can inspect calls and drive the page.
@@ -26,7 +26,10 @@ if (!scenario) throw new Error(`Unknown scenario "${scenarioName}". Known: ${Obj
 
 const project = { id: "0f1e2d3c-0000-4000-8000-000000000001", name: "Demo" };
 const teamParam = params.get("team") ?? "team-a";
-const stalled = new Set((params.get("stall") ?? "").split(",").filter(Boolean).map(Number));
+const stalled = new Map((params.get("stall") ?? "").split(",").filter(Boolean).map((s) => {
+  const [id, n = "1"] = s.split(":");
+  return [Number(id), Number(n)] as [number, number];
+}));
 const api = createMockApi(scenario, project, Date.now(), Number(params.get("delay") ?? 0), stalled);
 
 const DARK = `:root{--background-color:#1b1a19;--callout-background-color:#252423;--text-primary-color:rgba(255,255,255,.9);--text-secondary-color:rgba(255,255,255,.6)}`;
@@ -44,7 +47,7 @@ export const mock = {
   culture: params.get("culture") ?? "en-US",
   theme: (params.get("theme") === "dark" ? "dark" : "light") as "light" | "dark",
   calls: api.calls as RecordedCall[],
-  /** Work item ids whose next history request never answers (see &stall). */
+  /** Work item id → how many of its next history requests never answer (see &stall). */
   stalled: api.stalled,
   opened: [] as number[],
   notifications: [] as Notification[],
