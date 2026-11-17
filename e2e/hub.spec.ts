@@ -256,12 +256,20 @@ test.describe("hub · agile process", () => {
 test.describe("hub · requests that never answer", () => {
   const historyOf = async (page: import("@playwright/test").Page, id: number) =>
     (await calls(page)).filter((c) => c.path.startsWith(`_apis/wit/workItems/${id}/updates`));
+  /**
+   * Waits until every item but the stalled one is read: the loader shows "N-1 / N", as reported in v1.2.3.
+   * The first progress update is not enough: under load the stalled request may not have been sent yet,
+   * and moving the fake clock while other requests are in flight would time those out too.
+   */
+  const stalledOnLastItem = (page: import("@playwright/test").Page) => expect.poll(async () => {
+    const m = (await page.locator("#status").textContent())?.match(/Reading work item history… (\d+) \/ (\d+)/);
+    return m ? Number(m[2]) - Number(m[1]) : undefined;
+  }, { message: "all items but the stalled one are read" }).toBe(1);
 
   test("a history request that never answers is cancelled and retried, so the loader does not hang", async ({ page }) => {
     await page.clock.install();
     await page.goto(`hub.html?stall=${ANCHORS.restarted}`);
-    // Everything but the stalled item is read: the loader waits at "N-1 / N", as reported in v1.2.3.
-    await expect(page.locator("#status")).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await stalledOnLastItem(page);
     await page.clock.runFor(29_000);
     await expect(page.locator("#status")).toBeVisible();
 
@@ -276,7 +284,7 @@ test.describe("hub · requests that never answer", () => {
     await page.clock.install();
     await page.goto(`hub.html?stall=${ANCHORS.restarted}:3`); // every attempt stalls
     const status = page.locator("#status");
-    await expect(status).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await stalledOnLastItem(page);
     await expect(page.locator("#reload-page")).toHaveCount(0);
 
     await page.clock.runFor(46_000); // no progress for 45 s
@@ -296,7 +304,7 @@ test.describe("hub · requests that never answer", () => {
 
   test("changing filters mid-load cancels the old load and shows the new one", async ({ page }) => {
     await page.goto(`hub.html?stall=${ANCHORS.restarted}`);
-    await expect(page.locator("#status")).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await stalledOnLastItem(page);
     await page.locator("#types label", { hasText: "Bug" }).click();
 
     await expect(page.locator("#status")).toBeHidden();
@@ -390,6 +398,48 @@ test.describe("hub · other processes and failures", () => {
     await expect(loader).toBeVisible();
     await expect(page.locator("#status")).toBeHidden({ timeout: 15_000 });
     await expect(dots(page).first()).toBeVisible();
+  });
+
+  test("a web page instead of data (sign-in page, HTTP 203) is retried; the load then succeeds", async ({ page }) => {
+    // As in v1.2.3 right after a type change: the WIQL call got HTML and the hub showed "Unexpected token '<'".
+    await page.goto("hub.html?html=/_apis/wit/wiql");
+    await expect(page.locator("#status")).toBeHidden({ timeout: 10_000 });
+    expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ age: 450, inState: 400 });
+    expect((await calls(page)).filter((c) => c.path.includes("/_apis/wit/wiql"))).toHaveLength(2);
+  });
+
+  test("a type disabled in the process while the hub is open goes away on Refresh", async ({ page }) => {
+    await openHub(page);
+    expect(await chipLabels(page, "types")).toEqual(["Bug", "Task", "User Story"]);
+    await page.evaluate(() => { (window as any).__mock.scenario.process.types.find((t: any) => t.name === "Task").isDisabled = true; });
+
+    await page.click("#refresh");
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await chipLabels(page, "types")).toEqual(["Bug", "User Story"]);
+    expect(inClause(await lastWiql(page), "System.WorkItemType")).toEqual(["User Story", "Bug"]);
+    expect(await hubRow(page, ANCHORS.task)).toBeUndefined();
+  });
+
+  test("after a failed load the next one reads the work item types again", async ({ page }) => {
+    await page.clock.install();
+    await page.goto("hub.html?html=/_apis/wit/wiql:3");
+    await page.clock.runFor(5_000);
+    await expect(page.locator("#status.err")).toBeVisible();
+    const typeReads = async () => (await calls(page)).filter((c) => c.path.includes("/_apis/wit/workitemtypes?")).length;
+    expect(await typeReads()).toBe(1);
+
+    await page.locator("#types label", { hasText: "Bug" }).click();
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await typeReads()).toBe(2);
+  });
+
+  test("a web page every time ends in a readable error with the reload button, not a JSON parse error", async ({ page }) => {
+    await page.clock.install();
+    await page.goto("hub.html?html=/_apis/wit/wiql:3");
+    await page.clock.runFor(5_000); // pauses of 1 s and 2 s between the attempts
+    await expect(page.locator("#status.err")).toContainText("Azure DevOps answered with a web page instead of data (HTTP 203");
+    await expect(page.locator("#status")).not.toContainText("JSON");
+    await expect(page.locator("#reload-page")).toBeVisible();
   });
 
   test("API errors are shown to the user", async ({ page }) => {

@@ -81,9 +81,11 @@ function updates(item: MockItem, now: number) {
 /**
  * delayMs: every API response waits this long, to see the loading state.
  * stalled: work item id → how many of its next history requests never answer (like Azure DevOps sometimes does);
+ * htmlPages: path fragment → how many of the next matching calls get the sign-in web page (HTTP 203) instead of JSON;
  * the extension has to cancel it. Tests can add ids at run time.
  */
-export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now(), delayMs = 0, stalled = new Map<number, number>()) {
+export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now(), delayMs = 0, stalled = new Map<number, number>(),
+  htmlPages = new Map<string, number>()) {
   const calls: RecordedCall[] = [];
   const isProject = (seg: string) => seg === project.id || seg === project.name;
 
@@ -96,7 +98,7 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
 
     if (method === "GET" && seg.length === 4 && isProject(seg[0]) && path.endsWith("/_apis/wit/workitemtypes")) {
       const p = scenario.process;
-      return { count: p.types.length, value: p.types.map((t) => ({ name: t.name, states: t.states })) };
+      return { count: p.types.length, value: p.types.map((t) => ({ name: t.name, states: t.states, ...(t.isDisabled ? { isDisabled: true } : {}) })) };
     }
     if (method === "GET" && isProject(seg[0]) && path.endsWith("/_apis/wit/workitemtypecategories")) {
       const p = scenario.process;
@@ -171,6 +173,13 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
     const auth = new Headers(init?.headers).get("Authorization");
     if (auth !== `Bearer ${MOCK_TOKEN}`) return json(401, { message: "Missing or wrong bearer token" });
     if (url.searchParams.get("api-version") !== "7.1") return json(400, { message: `Unexpected api-version ${url.searchParams.get("api-version")}` });
+    for (const [key, n] of htmlPages) {
+      if (n > 0 && path.includes(key)) {
+        htmlPages.set(key, n - 1);
+        return new Response("<!DOCTYPE html><html><head><title>Azure DevOps Services | Sign In</title></head><body></body></html>",
+          { status: 203, headers: { "Content-Type": "text/html; charset=utf-8" } });
+      }
+    }
     try {
       return json(200, await handle(method, path, url.searchParams, body));
     } catch (e: any) {
@@ -179,7 +188,7 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
     }
   }
 
-  return { calls, stalled, fetch: fetchMock };
+  return { calls, stalled, htmlPages, fetch: fetchMock };
 }
 
 function json(status: number, body: unknown): Response {

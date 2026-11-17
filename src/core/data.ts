@@ -38,10 +38,10 @@ const FIELDS = [
   "Microsoft.VSTS.Common.StateChangeDate",
 ];
 
-export async function loadProjectMeta(project: string): Promise<ProjectMeta> {
+export async function loadProjectMeta(project: string, signal?: AbortSignal): Promise<ProjectMeta> {
   const [types, cats] = await Promise.all([
-    get<List<ApiType>>(`${seg(project)}/_apis/wit/workitemtypes`),
-    get<List<ApiCategory>>(`${seg(project)}/_apis/wit/workitemtypecategories`),
+    get<List<ApiType>>(`${seg(project)}/_apis/wit/workitemtypes`, { signal }),
+    get<List<ApiCategory>>(`${seg(project)}/_apis/wit/workitemtypecategories`, { signal }),
   ]);
   const inCat = (ref: string) => cats.value.find((c) => c.referenceName === ref)?.workItemTypes.map((t) => t.name) ?? [];
   const hidden = new Set(inCat("Microsoft.HiddenCategory"));

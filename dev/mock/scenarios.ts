@@ -7,7 +7,8 @@
  */
 
 export interface MockState { name: string; category: "Proposed" | "InProgress" | "Resolved" | "Completed" | "Removed" }
-export interface MockType { name: string; states: MockState[] }
+/** isDisabled: turned off in the process settings (tests flip it at run time through window.__mock.scenario). */
+export interface MockType { name: string; states: MockState[]; isDisabled?: boolean }
 
 export interface MockProcess {
   types: MockType[];

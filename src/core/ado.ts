@@ -68,7 +68,14 @@ async function attempt<T>(method: "GET" | "POST", path: string, body: unknown, s
       }
       throw new Error(msg);
     }
-    return await (res.json() as Promise<T>);
+    // A web page instead of data: usually the sign-in page (HTTP 203) when the token was not accepted,
+    // sometimes an error page from a proxy. A retry asks the SDK for a fresh token.
+    const text = await res.text();
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new RetryableError(`Azure DevOps answered with a web page instead of data (HTTP ${res.status}, ${path.split("?")[0]}). Your sign-in may have expired.`);
+    }
   } catch (e) {
     if (signal?.aborted) throw signal.reason;
     if (timedOut) throw new RetryableError(`Azure DevOps API: no answer within ${REQUEST_TIMEOUT_MS / 1000} s (${path.split("?")[0]})`);
