@@ -185,10 +185,10 @@ function renderTable(points: AgingPoint[]): void {
   $("items").hidden = !top.length;
   $("table").innerHTML =
     `<table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>State</th>` +
-    `<th class="num">In state (days)</th><th class="num">Age (days)</th><th>Assigned to</th><th>Iteration path</th></tr></thead><tbody>` +
+    `<th class="num">In state (days)</th><th class="num">Age (days)</th><th>Iteration path</th></tr></thead><tbody>` +
     top.map((p, i) => `<tr${i >= PREVIEW_ROWS && !showAll ? " hidden" : ""}><td><a data-id="${p.item.id}" class="mono">${p.item.id}</a></td><td>${esc(p.item.title)}</td>` +
       `<td>${esc(p.item.type)}</td><td>${esc(p.item.state)}</td><td class="num">${n(p.inState)}</td>` +
-      `<td class="num">${n(p.age)}</td><td>${esc(p.item.assignedTo)}</td><td>${esc(p.item.iterationPath)}</td></tr>`).join("") +
+      `<td class="num">${n(p.age)}</td><td>${esc(p.item.iterationPath)}</td></tr>`).join("") +
     `</tbody></table>`;
   const more = $("more") as HTMLButtonElement;
   more.hidden = top.length <= PREVIEW_ROWS;
