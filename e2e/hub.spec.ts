@@ -253,6 +253,61 @@ test.describe("hub · agile process", () => {
   });
 });
 
+test.describe("hub · requests that never answer", () => {
+  const historyOf = async (page: import("@playwright/test").Page, id: number) =>
+    (await calls(page)).filter((c) => c.path.startsWith(`_apis/wit/workItems/${id}/updates`));
+
+  test("a history request that never answers is cancelled and retried, so the loader does not hang", async ({ page }) => {
+    await page.clock.install();
+    await page.goto(`hub.html?stall=${ANCHORS.restarted}`);
+    // Everything but the stalled item is read: the loader waits at "N-1 / N", as reported in v1.2.3.
+    await expect(page.locator("#status")).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await page.clock.runFor(29_000);
+    await expect(page.locator("#status")).toBeVisible();
+
+    await page.clock.runFor(5_000); // past the 30 s timeout and the 1 s pause before the retry
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await hubRow(page, ANCHORS.restarted)).toMatchObject({ age: 250, inState: 50 });
+    expect((await historyOf(page, ANCHORS.restarted)).map((c) => !!c.aborted)).toEqual([true, false]);
+    await expect(page.locator("#reload-page")).toHaveCount(0); // recovered on its own: no reload hint
+  });
+
+  test("a load that stops progressing suggests reloading the page; giving up shows the error with a reload button", async ({ page }) => {
+    await page.clock.install();
+    await page.goto(`hub.html?stall=${ANCHORS.restarted}:3`); // every attempt stalls
+    const status = page.locator("#status");
+    await expect(status).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await expect(page.locator("#reload-page")).toHaveCount(0);
+
+    await page.clock.runFor(46_000); // no progress for 45 s
+    await expect(status.locator(".spinner")).toBeVisible();
+    await expect(status).toContainText("Azure DevOps is not answering. If this does not finish, reload the page.");
+    await expect(page.locator("#reload-page")).toBeVisible();
+
+    await page.clock.runFor(60_000); // three attempts of 30 s with pauses between them
+    await expect(page.locator("#status.err")).toContainText("no answer within 30 s");
+    await expect(status).toContainText("Reload the page to try again.");
+    expect((await historyOf(page, ANCHORS.restarted)).map((c) => !!c.aborted)).toEqual([true, true, true]);
+
+    await page.evaluate(() => { (window as any).beforeReload = true; });
+    await page.click("#reload-page");
+    await expect.poll(() => page.evaluate(() => (window as any).beforeReload)).toBeUndefined();
+  });
+
+  test("changing filters mid-load cancels the old load and shows the new one", async ({ page }) => {
+    await page.goto(`hub.html?stall=${ANCHORS.restarted}`);
+    await expect(page.locator("#status")).toHaveText(/Reading work item history… (\d+) \/ (?!\1)\d+$/);
+    await page.locator("#types label", { hasText: "Bug" }).click();
+
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await chipLabels(page, "types")).toEqual(["Bug (off)", "Task", "User Story"]);
+    expect(await hubRow(page, ANCHORS.fresh)).toBeUndefined(); // a bug
+    expect(await hubRow(page, ANCHORS.restarted)).toMatchObject({ age: 250, inState: 50 });
+    // The old load's stalled request was cancelled, not left running next to the new one.
+    expect((await historyOf(page, ANCHORS.restarted)).map((c) => !!c.aborted)).toEqual([true, false]);
+  });
+});
+
 test.describe("hub · other processes and failures", () => {
   test("scrum: PBI + Bug + Task, Committed and In Progress", async ({ page }) => {
     await openHub(page, "scenario=scrum");
@@ -342,5 +397,7 @@ test.describe("hub · other processes and failures", () => {
     await expect(page.locator("#status .spinner")).toHaveCount(0);
     await expect(page.locator("#status.err")).toContainText("VS402337");
     await expect(page.locator("#result")).toBeHidden();
+    await expect(page.locator("#status")).toContainText("Reload the page to try again.");
+    await expect(page.locator("#reload-page")).toBeVisible();
   });
 });

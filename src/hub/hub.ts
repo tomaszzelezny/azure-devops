@@ -18,7 +18,8 @@ let meta: ProjectMeta;
 let settings: AgingSettings = { ...DEFAULT_SETTINGS };
 let items: WipItem[] = [];
 const hidden = new Set<string>();
-let loadSeq = 0;
+/** The load in progress; a newer one cancels it so stale requests do not compete with the current ones. */
+let loading: AbortController | undefined;
 /** What the chart shows right now; the report is made from exactly this. */
 let view: { points: AgingPoint[]; series: StateSeries[] } = { points: [], series: [] };
 let teamName = "";
@@ -51,10 +52,20 @@ function renderControls(): void {
   ($("current-iteration") as HTMLInputElement).checked = settings.includeCurrentIteration;
 }
 
-/** Shows a message instead of the result: a spinner while loading, red text for errors, nothing once loaded. */
-function status(msg: string, err = false): void {
+/** Without any progress for this long, the loader suggests reloading the page. */
+const STALL_HINT_MS = 45_000;
+
+/**
+ * Shows a message instead of the result: a spinner while loading, red text for errors, nothing once loaded.
+ * reloadHint adds a note that reloading the page should help, with a button that does it.
+ */
+function status(msg: string, err = false, reloadHint = false): void {
   const s = $("status");
-  s.innerHTML = err ? esc(msg) : `<span class="spinner" aria-hidden="true"></span>${esc(msg)}`;
+  s.innerHTML = (err ? esc(msg) : `<span class="spinner" aria-hidden="true"></span>${esc(msg)}`) +
+    (reloadHint
+      ? `<span class="reload-hint">${err ? "Reload the page to try again." : "Azure DevOps is not answering. If this does not finish, reload the page."}</span>` +
+        `<button class="btn" id="reload-page" type="button">↻ Reload page</button>`
+      : "");
   s.className = err ? "status err" : "status loading";
   s.hidden = !msg;
   $("result").hidden = !!msg;
@@ -62,19 +73,39 @@ function status(msg: string, err = false): void {
 }
 
 async function reload(): Promise<void> {
-  const seq = ++loadSeq;
-  status("Loading work items…");
+  loading?.abort();
+  const ctrl = loading = new AbortController();
+  const current = () => loading === ctrl;
+  let shown = "Loading work items…";
+  let stalled: number | undefined;
+  // Restarted on every bit of progress; fires only when the load sits still.
+  const watch = () => {
+    clearTimeout(stalled);
+    stalled = window.setTimeout(() => { if (current()) status(shown, false, true); }, STALL_HINT_MS);
+  };
+  status(shown);
+  watch();
   try {
     const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta), meta, {
       includeCurrentIteration: settings.includeCurrentIteration,
-      onProgress: (done, total) => { if (seq === loadSeq) status(`Reading work item history… ${done} / ${total}`); },
+      onProgress: (done, total) => {
+        if (!current()) return;
+        status(shown = `Reading work item history… ${done} / ${total}`);
+        watch();
+      },
+      signal: ctrl.signal,
     });
-    if (seq !== loadSeq) return; // a newer request superseded this one
+    if (!current()) return; // a newer request superseded this one
+    loading = undefined;
     items = got;
     status("");
     draw();
   } catch (e) {
-    if (seq === loadSeq) status(e instanceof Error ? e.message : String(e), true);
+    if (!current()) return;
+    loading = undefined;
+    status(e instanceof Error ? e.message : String(e), true, true);
+  } finally {
+    clearTimeout(stalled);
   }
 }
 
@@ -225,6 +256,7 @@ async function main(): Promise<void> {
     persist(); void reload();
   });
   $("refresh").addEventListener("click", () => void reload());
+  $("status").addEventListener("click", (e) => { if ((e.target as HTMLElement).closest("#reload-page")) location.reload(); });
   $("export").addEventListener("click", openLangMenu);
   $("more").addEventListener("click", () => { showAll = !showAll; draw(); });
   $("table").addEventListener("click", (e) => {
@@ -238,4 +270,4 @@ async function main(): Promise<void> {
   await reload();
 }
 
-main().catch((e) => status(e instanceof Error ? e.message : String(e), true));
+main().catch((e) => status(e instanceof Error ? e.message : String(e), true, true));

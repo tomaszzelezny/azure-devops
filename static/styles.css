@@ -102,6 +102,8 @@ button.lg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; 
 .status { color: var(--ink-2); padding: 24px 0; }
 .status.err { color: var(--crit); }
 .status.loading { display: flex; align-items: center; gap: 10px; }
+.status .reload-hint { color: var(--ink-2); }
+.status.err:has(.btn) { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 
 /* Loader shown while data is fetched. */
 .spinner {

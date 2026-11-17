@@ -61,10 +61,10 @@ export async function loadTeams(projectId: string): Promise<Team[]> {
 }
 
 /** WIQL clause restricting to the team's area paths (or whatever its team field is). */
-async function teamClause(project: string, teamId: string): Promise<string> {
+async function teamClause(project: string, teamId: string, signal?: AbortSignal): Promise<string> {
   if (!teamId) return "";
   const tfv = await get<{ field: { referenceName: string }; values: { value: string; includeChildren: boolean }[] }>(
-    `${seg(project)}/${seg(teamId)}/_apis/work/teamsettings/teamfieldvalues`);
+    `${seg(project)}/${seg(teamId)}/_apis/work/teamsettings/teamfieldvalues`, { signal });
   if (!tfv.values.length) return "";
   const f = `[${tfv.field.referenceName}]`;
   const parts = tfv.values.map((v) => `${f} ${v.includeChildren ? "UNDER" : "="} ${escapeWiql(v.value)}`);
@@ -75,10 +75,10 @@ async function teamClause(project: string, teamId: string): Promise<string> {
  * Path of the team's current iteration; without a team, of the project's default team.
  * Undefined when no iteration is current (the API may answer that with an empty list or with an error).
  */
-export async function currentIteration(project: string, teamId: string): Promise<string | undefined> {
+export async function currentIteration(project: string, teamId: string, signal?: AbortSignal): Promise<string | undefined> {
   try {
     const res = await get<List<{ path: string }>>(
-      `${seg(project)}/${teamId ? `${seg(teamId)}/` : ""}_apis/work/teamsettings/iterations?$timeframe=current`);
+      `${seg(project)}/${teamId ? `${seg(teamId)}/` : ""}_apis/work/teamsettings/iterations?$timeframe=current`, { signal });
     return res.value[0]?.path;
   } catch {
     return undefined;
@@ -89,32 +89,34 @@ export interface LoadOptions {
   /** False leaves out items in the current iteration. Default true. */
   includeCurrentIteration?: boolean;
   onProgress?: (done: number, total: number) => void;
+  /** Cancels the load (its requests reject with an AbortError), e.g. when the filters change mid-load. */
+  signal?: AbortSignal;
 }
 
 export async function loadWipItems(
   project: string, teamId: string, types: string[], states: string[], meta: ProjectMeta,
-  { includeCurrentIteration = true, onProgress }: LoadOptions = {},
+  { includeCurrentIteration = true, onProgress, signal }: LoadOptions = {},
 ): Promise<WipItem[]> {
   if (!types.length || !states.length) return [];
   const [team, iteration] = await Promise.all([
-    teamClause(project, teamId),
-    includeCurrentIteration ? undefined : currentIteration(project, teamId),
+    teamClause(project, teamId, signal),
+    includeCurrentIteration ? undefined : currentIteration(project, teamId, signal),
   ]);
   const query =
     "SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project" +
     ` AND [System.WorkItemType] IN (${types.map(escapeWiql).join(", ")})` +
     ` AND [System.State] IN (${states.map(escapeWiql).join(", ")})` +
     team + excludeIterationClause(iteration);
-  const res = await post<{ workItems: { id: number }[] }>(`${seg(project)}/_apis/wit/wiql?$top=20000`, { query });
+  const res = await post<{ workItems: { id: number }[] }>(`${seg(project)}/_apis/wit/wiql?$top=20000`, { query }, { signal });
   const ids = res.workItems.map((w) => w.id);
 
   const batches: Promise<List<ApiWorkItem>>[] = [];
   for (let i = 0; i < ids.length; i += 200) {
-    batches.push(post<List<ApiWorkItem>>(`${seg(project)}/_apis/wit/workitemsbatch`, { ids: ids.slice(i, i + 200), fields: FIELDS }));
+    batches.push(post<List<ApiWorkItem>>(`${seg(project)}/_apis/wit/workitemsbatch`, { ids: ids.slice(i, i + 200), fields: FIELDS }, { signal }));
   }
   const raw = (await Promise.all(batches)).flatMap((b) => b.value);
   const items = raw.map(toItem);
-  await fillHistory(items, startStates(meta), onProgress);
+  await fillHistory(items, startStates(meta), onProgress, signal);
   return items;
 }
 
@@ -141,16 +143,21 @@ function toItem(w: ApiWorkItem): WipItem {
  * Fill startedDate (and stateChangeDate where the process lacks that field) from each item's update history.
  * One request per item in the common case: the start is usually on the first page of updates.
  */
-async function fillHistory(items: WipItem[], started: Map<string, Set<string>>, onProgress?: (done: number, total: number) => void): Promise<void> {
+async function fillHistory(
+  items: WipItem[], started: Map<string, Set<string>>, onProgress?: (done: number, total: number) => void, signal?: AbortSignal,
+): Promise<void> {
   const todo = [...items];
   let done = 0;
+  // One failed item fails the load: stop the other workers instead of letting them read the rest.
+  const stop = new AbortController();
+  const both = signal ? AbortSignal.any([signal, stop.signal]) : stop.signal;
   const worker = async () => {
-    for (let it = todo.pop(); it; it = todo.pop()) {
+    for (let it = todo.pop(); it && !both.aborted; it = todo.pop()) {
       const needLast = isNaN(it.stateChangeDate.getTime());
       const starts = started.get(it.type) ?? new Set<string>();
       const history: StateUpdate[] = [];
       for (let skip = 0; ; skip += PAGE) {
-        const page = await get<List<ApiUpdate>>(`_apis/wit/workItems/${it.id}/updates?$top=${PAGE}&$skip=${skip}`);
+        const page = await get<List<ApiUpdate>>(`_apis/wit/workItems/${it.id}/updates?$top=${PAGE}&$skip=${skip}`, { signal: both });
         for (const u of page.value) {
           history.push({ state: u.fields?.["System.State"]?.newValue as string | undefined, date: u.fields?.["System.ChangedDate"]?.newValue as string | undefined });
         }
@@ -164,5 +171,11 @@ async function fillHistory(items: WipItem[], started: Map<string, Set<string>>, 
       onProgress?.(++done, items.length);
     }
   };
-  await Promise.all(Array.from({ length: 8 }, worker));
+  try {
+    await Promise.all(Array.from({ length: 8 }, worker));
+  } catch (e) {
+    stop.abort(e);
+    throw e;
+  }
+  signal?.throwIfAborted();
 }
