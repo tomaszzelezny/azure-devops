@@ -176,9 +176,9 @@ export interface StateStats {
   name: string;
   color: number;
   count: number;
-  medianAge: number;
-  p85Age: number;
-  /** Longest time in this state among its items. */
+  /** Days in this state (not the age since work started): median, 85th percentile and longest. */
+  medianInState: number;
+  p85InState: number;
   maxInState: number;
 }
 
@@ -210,8 +210,8 @@ export function reportStats(points: AgingPoint[], series: StateSeries[], thresho
     fresh,
     byState: series.map((s) => {
       const ps = points.filter((p) => p.item.state === s.name);
-      const a = ps.map((p) => p.age);
-      return { name: s.name, color: s.color, count: ps.length, medianAge: percentile(a, 0.5), p85Age: percentile(a, 0.85), maxInState: Math.max(0, ...ps.map((p) => p.inState)) };
+      const d = ps.map((p) => p.inState);
+      return { name: s.name, color: s.color, count: ps.length, medianInState: percentile(d, 0.5), p85InState: percentile(d, 0.85), maxInState: Math.max(0, ...d) };
     }),
     longest: [...points].sort((a, b) => b.inState - a.inState).slice(0, longestCount),
   };

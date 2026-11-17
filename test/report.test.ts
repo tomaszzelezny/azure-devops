@@ -32,13 +32,39 @@ test("report numbers: count, median and 85th percentile age, oldest, over thresh
   assert.deepEqual(s.longest.map((p) => p.item.id), [3, 2, 5, 4, 1]);
 });
 
-test("report numbers per state, including a state with no items", () => {
+test("per-state numbers count only the time in the current state, not the item's age", () => {
+  // OnHold: 5, 20 and 100 days in the state; ages far larger and deliberately unordered.
+  const onHold = toPoints([
+    item(11, "OnHold", 900, 5),
+    item(12, "OnHold", 400, 20),
+    item(13, "OnHold", 650, 100),
+  ], now);
+  const b = reportStats(onHold, seriesFor(["OnHold"], onHold), 365).byState[0];
+  assert.equal(b.count, 3);
+  assert.equal(Math.round(b.medianInState), 20);
+  assert.equal(Math.round(b.p85InState), 76); // 20 + 0.7 × (100 − 20)
+  assert.equal(Math.round(b.maxInState), 100);
+
+  // Changing only the ages leaves every per-state number as it was.
+  const younger = toPoints([item(11, "OnHold", 6, 5), item(12, "OnHold", 30, 20), item(13, "OnHold", 101, 100)], now);
+  const b2 = reportStats(younger, seriesFor(["OnHold"], younger), 365).byState[0];
+  assert.deepEqual([b2.medianInState, b2.p85InState, b2.maxInState].map(Math.round), [20, 76, 100]);
+});
+
+test("per-state numbers for several states, including a state with no items", () => {
   const s = reportStats(points, series, 365);
-  assert.deepEqual(s.byState.map((b) => [b.name, b.count, Math.round(b.medianAge), Math.round(b.maxInState)]), [
-    ["Active", 3, 50, 100],
-    ["OnHold", 0, 0, 0],
-    ["Resolved", 2, 550, 380],
+  // Active: 5, 20, 100 days in state; Resolved: 30, 380.
+  assert.deepEqual(s.byState.map((b) => [b.name, b.count, Math.round(b.medianInState), Math.round(b.p85InState), Math.round(b.maxInState)]), [
+    ["Active", 3, 20, 76, 100],
+    ["OnHold", 0, 0, 0, 0],
+    ["Resolved", 2, 205, 328, 380],
   ]);
+});
+
+test("the summary tiles still use the age since work started", () => {
+  const s = reportStats(points, series, 365);
+  assert.equal(s.medianAge, 100);
+  assert.equal(s.oldest?.item.id, 5);
 });
 
 test("report numbers with no items", () => {
@@ -71,11 +97,11 @@ const input = (lang: "en" | "pl", over: Partial<ReportInput> = {}): ReportInput 
 
 test("the report SVG is in the chosen language, with filters, numbers and the chart", () => {
   const pl = reportSvg(input("pl")).svg;
-  for (const s of ["Raport Aging WIP", "Cały projekt", "bez bieżącej iteracji", "Próg: ", "1 rok", "Mediana wieku", "Najdłużej w obecnym stanie", "<g id=chart></g>", "v1.2.1"]) {
+  for (const s of ["Mediana w stanie", "P85 w stanie", "Maks. w stanie", "Raport Aging WIP", "Cały projekt", "bez bieżącej iteracji", "Próg: ", "1 rok", "Mediana wieku", "Najdłużej w obecnym stanie", "<g id=chart></g>", "v1.2.1"]) {
     assert.ok(pl.includes(s), `PL report contains "${s}"`);
   }
   const en = reportSvg(input("en", { team: "Team A", includeCurrentIteration: true })).svg;
-  for (const s of ["Aging WIP report", "Team A", "current iteration included", "Median age", "more than 1 year in one state"]) {
+  for (const s of ["Median in state", "P85 in state", "Max in state", "Aging WIP report", "Team A", "current iteration included", "Median age", "more than 1 year in one state"]) {
     assert.ok(en.includes(s), `EN report contains "${s}"`);
   }
   assert.ok(!en.includes("Raport"));

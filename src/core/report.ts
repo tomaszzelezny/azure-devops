@@ -147,8 +147,8 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
     return ty + 9;
   };
   const leftEnd = table(P, lw, T.byState,
-    [{ h: T.state, w: 0.28 }, { h: T.count, w: 0.15, num: true }, { h: T.medianAge, w: 0.21, num: true }, { h: T.p85Short, w: 0.15, num: true }, { h: T.maxInState, w: 0.21, num: true }],
-    s.byState.map((b) => ({ cells: [b.name, n(b.count), b.count ? n(b.medianAge) : "–", b.count ? n(b.p85Age) : "–", b.count ? n(b.maxInState) : "–"], color: b.color })));
+    [{ h: T.state, w: 0.22 }, { h: T.count, w: 0.14, num: true }, { h: T.medianInState, w: 0.25, num: true }, { h: T.p85InState, w: 0.18, num: true }, { h: T.maxInState, w: 0.21, num: true }],
+    s.byState.map((b) => ({ cells: [b.name, n(b.count), b.count ? n(b.medianInState) : "–", b.count ? n(b.p85InState) : "–", b.count ? n(b.maxInState) : "–"], color: b.color })));
   const rightEnd = table(rx, rw, T.longest,
     [{ h: T.id, w: 0.12 }, { h: T.workItem, w: 0.42 }, { h: T.state, w: 0.2 }, { h: T.inState, w: 0.13, num: true }, { h: T.age, w: 0.13, num: true }],
     s.longest.map((p) => ({ cells: [`#${p.item.id}`, clip(p.item.title, 38), p.item.state, n(p.inState), n(p.age)], color: colorOf.get(p.item.state) ?? 0, mono0: true })));

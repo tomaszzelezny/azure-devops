@@ -38,8 +38,10 @@ export interface ReportTexts {
   byState: string;
   state: string;
   count: string;
+  /** Per-state table: days in the current state. */
+  medianInState: string;
+  p85InState: string;
   maxInState: string;
-  p85Short: string;
   longest: string;
   id: string;
   workItem: string;
@@ -76,8 +78,9 @@ const EN: ReportTexts = {
   byState: "By state",
   state: "State",
   count: "Items",
+  medianInState: "Median in state",
+  p85InState: "P85 in state",
   maxInState: "Max in state",
-  p85Short: "P85 age",
   longest: "Longest in current state",
   id: "ID",
   workItem: "Title",
@@ -113,8 +116,9 @@ const PL: ReportTexts = {
   byState: "Według stanu",
   state: "Stan",
   count: "Elementy",
+  medianInState: "Mediana w stanie",
+  p85InState: "P85 w stanie",
   maxInState: "Maks. w stanie",
-  p85Short: "Wiek P85",
   longest: "Najdłużej w obecnym stanie",
   id: "ID",
   workItem: "Tytuł",
