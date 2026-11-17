@@ -9,7 +9,8 @@ export const MOCK_BASE = "/mock-ado/";
 export const MOCK_TOKEN = "mock-token";
 const DAY = 86_400_000;
 
-export interface RecordedCall { method: string; path: string; body?: unknown }
+/** aborted: the extension cancelled the request before it was answered. */
+export interface RecordedCall { method: string; path: string; body?: unknown; aborted?: boolean }
 
 /** Quoted WIQL literals: 'a', 'b''c' → ["a", "b'c"]. */
 function literals(list: string): string[] {
@@ -77,8 +78,12 @@ function updates(item: MockItem, now: number) {
   return out;
 }
 
-/** delayMs: every API response waits this long, to see the loading state. */
-export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now(), delayMs = 0) {
+/**
+ * delayMs: every API response waits this long, to see the loading state.
+ * stalled: work item ids whose first history request never answers (like Azure DevOps sometimes does);
+ * the extension has to cancel it. Tests can add ids at run time.
+ */
+export function createMockApi(scenario: Scenario, project: { id: string; name: string }, now = Date.now(), delayMs = 0, stalled = new Set<number>()) {
   const calls: RecordedCall[] = [];
   const isProject = (seg: string) => seg === project.id || seg === project.name;
 
@@ -144,8 +149,20 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
     const method = (init?.method ?? "GET").toUpperCase();
     const path = url.pathname.slice(MOCK_BASE.length);
     const body = init?.body ? JSON.parse(String(init.body)) : undefined;
-    calls.push({ method, path: path + url.search, body });
-    if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
+    const call: RecordedCall = { method, path: path + url.search, body };
+    calls.push(call);
+    const signal = init?.signal ?? undefined;
+    const stall = path.match(/^_apis\/wit\/workItems\/(\d+)\/updates$/);
+    const stallId = stall ? Number(stall[1]) : NaN;
+    // Waits ms (forever when undefined) unless the extension aborts the request, like fetch does.
+    const wait = (ms?: number) => new Promise<void>((resolve, reject) => {
+      if (signal?.aborted) { call.aborted = true; return reject(signal.reason); }
+      const t = ms === undefined ? undefined : setTimeout(resolve, ms);
+      signal?.addEventListener("abort", () => { clearTimeout(t); call.aborted = true; reject(signal.reason); }, { once: true });
+    });
+    if (stalled.delete(stallId)) await wait();
+    if (delayMs) await wait(delayMs);
+    if (signal?.aborted) { call.aborted = true; throw signal.reason; }
 
     const auth = new Headers(init?.headers).get("Authorization");
     if (auth !== `Bearer ${MOCK_TOKEN}`) return json(401, { message: "Missing or wrong bearer token" });
@@ -158,7 +175,7 @@ export function createMockApi(scenario: Scenario, project: { id: string; name: s
     }
   }
 
-  return { calls, fetch: fetchMock };
+  return { calls, stalled, fetch: fetchMock };
 }
 
 function json(status: number, body: unknown): Response {

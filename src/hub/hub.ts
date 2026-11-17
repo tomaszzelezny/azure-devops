@@ -18,7 +18,8 @@ let meta: ProjectMeta;
 let settings: AgingSettings = { ...DEFAULT_SETTINGS };
 let items: WipItem[] = [];
 const hidden = new Set<string>();
-let loadSeq = 0;
+/** The load in progress; a newer one cancels it so stale requests do not compete with the current ones. */
+let loading: AbortController | undefined;
 /** What the chart shows right now; the report is made from exactly this. */
 let view: { points: AgingPoint[]; series: StateSeries[] } = { points: [], series: [] };
 let teamName = "";
@@ -62,19 +63,25 @@ function status(msg: string, err = false): void {
 }
 
 async function reload(): Promise<void> {
-  const seq = ++loadSeq;
+  loading?.abort();
+  const ctrl = loading = new AbortController();
+  const current = () => loading === ctrl;
   status("Loading work items…");
   try {
     const got = await loadWipItems(project.name, settings.teamId, effectiveTypes(settings, meta), effectiveStates(settings, meta), meta, {
       includeCurrentIteration: settings.includeCurrentIteration,
-      onProgress: (done, total) => { if (seq === loadSeq) status(`Reading work item history… ${done} / ${total}`); },
+      onProgress: (done, total) => { if (current()) status(`Reading work item history… ${done} / ${total}`); },
+      signal: ctrl.signal,
     });
-    if (seq !== loadSeq) return; // a newer request superseded this one
+    if (!current()) return; // a newer request superseded this one
+    loading = undefined;
     items = got;
     status("");
     draw();
   } catch (e) {
-    if (seq === loadSeq) status(e instanceof Error ? e.message : String(e), true);
+    if (!current()) return;
+    loading = undefined;
+    status(e instanceof Error ? e.message : String(e), true);
   }
 }
 
