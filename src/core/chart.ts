@@ -141,8 +141,11 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   const d = Math.min(mx, my);
   el("line", { x1: x(0), y1: y(0), x2: x(d), y2: y(d), class: "diag" }, svg);
   const thr = opts.thresholdDays;
-  // The threshold does not stretch the axis: when the data stays below it, the line is not drawn.
-  if (thr < mx) {
+  // The threshold does not stretch the axis. When the data stays below it, a marker at the right edge says it is further on.
+  if (thr >= mx) {
+    el("text", { x: W - mr - 4, y: mt + 12, "text-anchor": "end", class: "thr-label thr-off", "font-size": fs }, svg)
+      .textContent = `${L.threshold(thr)} →`;
+  } else {
     // Vertical: the threshold counts days since work started (x axis). The label runs down along the line, left of it.
     const tx = x(thr) - 5, ty = mt + 4;
     el("line", { x1: x(thr), x2: x(thr), y1: mt, y2: H - mb, class: "thr" }, svg);

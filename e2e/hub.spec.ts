@@ -330,6 +330,7 @@ test.describe("hub · other processes and failures", () => {
     expect(await xTicks()).toEqual(["0", "20", "40", "60"]);
     expect(await yTicks()).toEqual(["0", "10", "20", "30"]);
     await expect(page.locator("#chart .thr")).toHaveCount(0); // 1 year is off the axis; it does not stretch it
+    await expect(page.locator("#chart .thr-label")).toHaveText("1 year since work started →"); // but a marker says where it is
 
     await page.locator("#types label", { hasText: "User Story" }).locator("input").check();
     await expect(page.locator("#status")).toBeHidden();
@@ -337,6 +338,7 @@ test.describe("hub · other processes and failures", () => {
     expect(Number((await xTicks()).at(-1))).toBeGreaterThanOrEqual(450);
     expect(Number((await yTicks()).at(-1))).toBeGreaterThanOrEqual(400);
     await expect(page.locator("#chart .thr")).toHaveCount(1);
+    await expect(page.locator("#chart .thr-label")).toHaveText("1 year since work started");
   });
 
   test("scrum: PBI + Bug + Task, Committed and In Progress", async ({ page }) => {
