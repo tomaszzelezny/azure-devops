@@ -193,7 +193,7 @@ export interface ReportStats {
   /** Items that changed state in the last 30 days. */
   fresh: number;
   byState: StateStats[];
-  /** Items longest in their current state, longest first. */
+  /** Items whose work started longest ago, oldest first (ties: longer in the current state first). */
   longest: AgingPoint[];
 }
 
@@ -213,6 +213,6 @@ export function reportStats(points: AgingPoint[], series: StateSeries[], thresho
       const d = ps.map((p) => p.inState);
       return { name: s.name, color: s.color, count: ps.length, medianInState: percentile(d, 0.5), p85InState: percentile(d, 0.85), maxInState: Math.max(0, ...d) };
     }),
-    longest: [...points].sort((a, b) => b.inState - a.inState).slice(0, longestCount),
+    longest: [...points].sort((a, b) => b.age - a.age || b.inState - a.inState).slice(0, longestCount),
   };
 }

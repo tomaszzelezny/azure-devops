@@ -128,7 +128,7 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
   parts.push(`<svg x="${P + 14}" y="${y + 34}" width="${CHART_WIDTH}" height="${ch}" viewBox="0 0 ${CHART_WIDTH} ${ch}" overflow="visible">${r.chart.markup}</svg>`);
   y += ch + 46 + 26;
 
-  // Tables: by state (left), longest in current state (right).
+  // Tables: by state (left), started longest ago (right).
   const lw = Math.round(INNER * 0.44), rx = P + lw + 24, rw = INNER - lw - 24;
   const table = (x: number, w: number, title: string, cols: { h: string; w: number; num?: boolean }[], rows: { cells: string[]; color?: number; mono0?: boolean }[]) => {
     let ty = y;
@@ -159,8 +159,8 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
     [{ h: T.state, w: 0.22 }, { h: T.count, w: 0.14, num: true }, { h: T.medianInState, w: 0.25, num: true }, { h: T.p85InState, w: 0.18, num: true }, { h: T.maxInState, w: 0.21, num: true }],
     s.byState.map((b) => ({ cells: [b.name, n(b.count), b.count ? n(b.medianInState) : "–", b.count ? n(b.p85InState) : "–", b.count ? n(b.maxInState) : "–"], color: b.color })));
   const rightEnd = table(rx, rw, T.longest,
-    [{ h: T.id, w: 0.12 }, { h: T.workItem, w: 0.42 }, { h: T.state, w: 0.2 }, { h: T.inState, w: 0.13, num: true }, { h: T.age, w: 0.13, num: true }],
-    s.longest.map((p) => ({ cells: [`#${p.item.id}`, clip(p.item.title, 38), p.item.state, n(p.inState), n(p.age)], color: colorOf.get(p.item.state) ?? 0, mono0: true })));
+    [{ h: T.id, w: 0.12 }, { h: T.workItem, w: 0.42 }, { h: T.state, w: 0.2 }, { h: T.age, w: 0.13, num: true }, { h: T.inState, w: 0.13, num: true }],
+    s.longest.map((p) => ({ cells: [`#${p.item.id}`, clip(p.item.title, 38), p.item.state, n(p.age), n(p.inState)], color: colorOf.get(p.item.state) ?? 0, mono0: true })));
   y = Math.max(leftEnd, rightEnd) + 28;
 
   const date = r.now.toLocaleDateString(r.locale, { day: "numeric", month: "long", year: "numeric" }) + ", " +

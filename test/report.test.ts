@@ -29,7 +29,7 @@ test("report numbers: count, median and 85th percentile age, oldest, over thresh
   assert.equal(s.oldest?.item.id, 5);
   assert.equal(s.overThreshold, 2); // started 400 and 700 days ago; days in state do not count
   assert.equal(s.fresh, 3); // 5, 20 and 30 days in state
-  assert.deepEqual(s.longest.map((p) => p.item.id), [3, 2, 5, 4, 1]);
+  assert.deepEqual(s.longest.map((p) => p.item.id), [5, 3, 2, 4, 1]); // by days since work started
 });
 
 test("per-state numbers count only the time in the current state, not the item's age", () => {
@@ -97,7 +97,7 @@ const input = (lang: "en" | "pl", over: Partial<ReportInput> = {}): ReportInput 
 
 test("the report SVG is in the chosen language, with filters, numbers and the chart", () => {
   const pl = reportSvg(input("pl")).svg;
-  for (const s of ["Dni od rozpoczęcia pracy", "Dni w obecnym stanie", "Według stanu · dni w obecnym stanie", "Najdawniej rozpoczęty", "Od startu", "Raport Aging WIP", "Cały projekt", "bez bieżącej iteracji", "Próg: ", "1 rok", "Najdłużej w obecnym stanie", "<g id=chart></g>", "v1.2.1"]) {
+  for (const s of ["Dni od rozpoczęcia pracy", "Dni w obecnym stanie", "Według stanu · dni w obecnym stanie", "Najdawniej rozpoczęty", "Od startu", "Raport Aging WIP", "Cały projekt", "bez bieżącej iteracji", "Próg: ", "1 rok", "Najdawniej rozpoczęte", "<g id=chart></g>", "v1.2.1"]) {
     assert.ok(pl.includes(s), `PL report contains "${s}"`);
   }
   const en = reportSvg(input("en", { team: "Team A", includeCurrentIteration: true })).svg;
