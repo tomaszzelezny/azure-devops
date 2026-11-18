@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  effectiveStates, effectiveTypes, escapeWiql, excludeIterationClause, niceMax, scanHistory, seriesFor, stackPoints, startStates, wipStatesOf, summary, takeaway, ticks, toPoints,
+  effectiveStates, effectiveTypes, escapeWiql, excludeIterationClause, niceMax, axis, scanHistory, seriesFor, stackPoints, startStates, wipStatesOf, summary, takeaway, ticks, toPoints,
 } from "../src/core/compute.ts";
 import { DEFAULT_SETTINGS, type ProjectMeta, type WipItem } from "../src/core/types.ts";
 
@@ -89,6 +89,15 @@ test("helpers", () => {
   assert.equal(niceMax(730), 1000);
   assert.equal(niceMax(410), 500);
   assert.deepEqual(ticks(1000, 4), [0, 250, 500, 750, 1000]);
+});
+
+test("chart axis: a floor when the data is small, follows the data when it is larger", () => {
+  assert.deepEqual(axis(20, 60, 4), { max: 60, ticks: [0, 20, 40, 60] });
+  assert.deepEqual(axis(10, 30, 4), { max: 30, ticks: [0, 10, 20, 30] });
+  assert.deepEqual(axis(0, 30, 4), { max: 30, ticks: [0, 10, 20, 30] });
+  assert.deepEqual(axis(134, 60, 4), { max: 150, ticks: [0, 50, 100, 150] }); // 134 × 1.02 = 136.7, step 50
+  assert.deepEqual(axis(54, 30, 4), { max: 60, ticks: [0, 20, 40, 60] });
+  assert.equal(axis(1266, 60, 4).max, 1500);
   assert.equal(takeaway([], 365), "No open work items in the selected states.");
 });
 

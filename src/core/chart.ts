@@ -1,4 +1,4 @@
-import { niceMax, stackPoints, thresholdLabel, ticks, type AgingPoint, type StateSeries } from "./compute.ts";
+import { axis, stackPoints, thresholdLabel, type AgingPoint, type StateSeries } from "./compute.ts";
 
 const NS = "http://www.w3.org/2000/svg";
 
@@ -29,6 +29,8 @@ export interface ChartOptions {
   locale?: string;
 }
 
+/** Smallest axis ends, in days. */
+export const MIN_AGE_AXIS = 60, MIN_IN_STATE_AXIS = 30;
 const LABELS = { x: "days since work started", y: "days in current state", threshold: (d: number) => `${thresholdLabel(d)} since work started` };
 
 let tip: HTMLDivElement | undefined;
@@ -115,27 +117,32 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   const color = new Map(series.map((s) => [s.name, `var(--c${s.color})`]));
   const P = points.filter((p) => color.has(p.item.state));
 
-  const m = niceMax(Math.max(opts.thresholdDays * 1.1, ...P.map((p) => p.age), 30) * 1.02);
-  const x = (v: number) => ml + (v / m) * (W - ml - mr);
-  const y = (v: number) => H - mb - (v / m) * (H - mt - mb);
-  const tk = ticks(m, c ? 3 : 4);
+  // Each axis follows its own data, with a floor: 60 days since work started, 30 days in the current state.
+  const xa = axis(Math.max(0, ...P.map((p) => p.age)), MIN_AGE_AXIS, c ? 3 : 4);
+  const ya = axis(Math.max(0, ...P.map((p) => p.inState)), MIN_IN_STATE_AXIS, c ? 3 : 4);
+  const mx = xa.max, my = ya.max;
+  const x = (v: number) => ml + (v / mx) * (W - ml - mr);
+  const y = (v: number) => H - mb - (v / my) * (H - mt - mb);
 
   const grid = el("g", { class: "grid" }, svg);
   const ax = el("g", { class: "axis", "font-size": fs }, svg);
-  for (const v of tk) {
+  for (const v of ya.ticks) {
     el("line", { x1: ml, x2: W - mr, y1: y(v), y2: y(v) }, grid);
     el("text", { x: ml - 6, y: y(v) + 4, "text-anchor": "end" }, ax).textContent = num(v);
-    el("text", { x: x(v), y: H - mb + 15, "text-anchor": "middle" }, ax).textContent = num(v);
   }
+  for (const v of xa.ticks) el("text", { x: x(v), y: H - mb + 15, "text-anchor": "middle" }, ax).textContent = num(v);
   el("text", { x: (ml + W - mr) / 2, y: H - 3, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
     .textContent = L.x;
   const cy = (mt + H - mb) / 2;
   el("text", { x: 9, y: cy, transform: `rotate(-90 9 ${cy})`, "text-anchor": "middle", class: "label", "font-size": fs }, svg)
     .textContent = L.y;
 
-  el("line", { x1: x(0), y1: y(0), x2: x(m), y2: y(m), class: "diag" }, svg);
+  // Diagonal: items that have not changed state since work started. It ends where the shorter axis ends.
+  const d = Math.min(mx, my);
+  el("line", { x1: x(0), y1: y(0), x2: x(d), y2: y(d), class: "diag" }, svg);
   const thr = opts.thresholdDays;
-  if (thr < m) {
+  // The threshold does not stretch the axis: when the data stays below it, the line is not drawn.
+  if (thr < mx) {
     // Vertical: the threshold counts days since work started (x axis). The label runs down along the line, left of it.
     const tx = x(thr) - 5, ty = mt + 4;
     el("line", { x1: x(thr), x2: x(thr), y1: mt, y2: H - mb, class: "thr" }, svg);

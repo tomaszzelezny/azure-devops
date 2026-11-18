@@ -319,6 +319,26 @@ test.describe("hub · requests that never answer", () => {
 });
 
 test.describe("hub · other processes and failures", () => {
+  test("chart axes: at least 60 days since work started and 30 days in state, larger when the data is", async ({ page }) => {
+    await openHub(page, "scenario=no-state-change-date");
+    const xTicks = () => page.locator('#chart .axis text[text-anchor="middle"]').allTextContents();
+    const yTicks = () => page.locator('#chart .axis text[text-anchor="end"]').allTextContents();
+    for (const t of ["Bug", "User Story"]) await page.locator("#types label", { hasText: t }).locator("input").uncheck();
+    await expect.poll(async () => inClause(await lastWiql(page), "System.WorkItemType")).toEqual(["Task"]);
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await hubRow(page, ANCHORS.task)).toMatchObject({ age: 12, inState: 12 }); // the only item left
+    expect(await xTicks()).toEqual(["0", "20", "40", "60"]);
+    expect(await yTicks()).toEqual(["0", "10", "20", "30"]);
+    await expect(page.locator("#chart .thr")).toHaveCount(0); // 1 year is off the axis; it does not stretch it
+
+    await page.locator("#types label", { hasText: "User Story" }).locator("input").check();
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ age: 450, inState: 400 });
+    expect(Number((await xTicks()).at(-1))).toBeGreaterThanOrEqual(450);
+    expect(Number((await yTicks()).at(-1))).toBeGreaterThanOrEqual(400);
+    await expect(page.locator("#chart .thr")).toHaveCount(1);
+  });
+
   test("scrum: PBI + Bug + Task, Committed and In Progress", async ({ page }) => {
     await openHub(page, "scenario=scrum");
     expect(await chipLabels(page, "types")).toEqual(["Bug", "Product Backlog Item", "Task"]);

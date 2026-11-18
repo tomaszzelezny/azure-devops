@@ -137,6 +137,19 @@ export function ticks(max: number, count: number): number[] {
   return out;
 }
 
+/**
+ * One chart axis: at least `min` days; when the data goes further, it follows the data
+ * (2% headroom, rounded up to a whole tick step). Returns the axis end and its ticks.
+ */
+export function axis(dataMax: number, min: number, count: number): { max: number; ticks: number[] } {
+  const v = Math.max(min, dataMax * 1.02);
+  const step = niceMax(v / count);
+  const max = v <= min ? min : Math.ceil(v / step - 1e-9) * step;
+  const out: number[] = [];
+  for (let t = 0; t <= max + 1e-9; t += step) out.push(Math.round(t * 100) / 100);
+  return { max, ticks: out };
+}
+
 export function escapeWiql(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
