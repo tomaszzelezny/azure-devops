@@ -17,7 +17,7 @@ test.describe("hub · agile process", () => {
     const expected = await page.evaluate(() => (window as any).__mock.scenario.items.filter((i: any) =>
       ["User Story", "Bug", "Task"].includes(i.type) && ["Active", "OnHold", "For Testing", "Resolved"].includes(i.state)).length);
     await expect(dots(page)).toHaveCount(expected);
-    await expect(page.locator("#take")).toHaveText(new RegExp(`^\\d+ of ${expected} items have been in the same state for more than 1 year\\.`));
+    await expect(page.locator("#take")).toHaveText(new RegExp(`^\\d+ of ${expected} items started more than 1 year ago\\.`));
   });
 
   test("age counts from the first start, time in state from the last change", async ({ page }) => {
@@ -33,7 +33,7 @@ test.describe("hub · agile process", () => {
 
   test("table columns: no Assigned to; the last one shows the iteration path", async ({ page }) => {
     await openHub(page);
-    await expect(page.locator("#table th")).toHaveText(["ID", "Title", "Type", "State", "Days in state", "Days since start", "Iteration path"]);
+    await expect(page.locator("#table th")).toHaveText(["ID", "Title", "Type", "State", "Days since start", "Days in state", "Iteration path"]);
     expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ iteration: "Demo\\Sprint 3" });
     expect(await hubRow(page, ANCHORS.fresh)).toMatchObject({ iteration: "Demo\\Sprint 12" });
     const batch = (await calls(page)).find((c) => c.path.includes("workitemsbatch"))!;
@@ -151,8 +151,8 @@ test.describe("hub · agile process", () => {
   test("threshold line and summary follow the threshold", async ({ page }) => {
     await openHub(page);
     await page.selectOption("#threshold", "90");
-    await expect(page.locator("#chart .thr-label")).toHaveText("90 days in the same state");
-    await expect(page.locator("#take")).toContainText("for more than 90 days");
+    await expect(page.locator("#chart .thr-label")).toHaveText("90 days since work started");
+    await expect(page.locator("#take")).toContainText("started more than 90 days ago");
   });
 
   test("clicking a dot or a table link opens the work item", async ({ page }) => {
@@ -170,12 +170,14 @@ test.describe("hub · agile process", () => {
     expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([ANCHORS.stuckInTesting, tipId]);
   });
 
-  test("item list shows the five longest in state, Show all expands it", async ({ page }) => {
+  test("item list shows the five started longest ago, Days since start before Days in state; Show all expands it", async ({ page }) => {
     await openHub(page);
     const rows = page.locator("#table tbody tr");
     const total = await rows.count();
     expect(total).toBeGreaterThan(5);
     await expect(page.locator("#table tbody tr:visible")).toHaveCount(5);
+    await expect(page.locator("#items h2")).toHaveText("Started longest ago");
+    expect(await page.locator("#table th.num").allTextContents()).toEqual(["Days since start", "Days in state"]);
     const days = await page.locator("#table tbody tr:visible td:nth-child(5)").allTextContents();
     const nums = days.map((d) => Number(d.replace(/\D/g, "")));
     expect(nums).toEqual([...nums].sort((a, b) => b - a));
@@ -317,6 +319,26 @@ test.describe("hub · requests that never answer", () => {
 });
 
 test.describe("hub · other processes and failures", () => {
+  test("chart axes: at least 60 days since work started and 30 days in state, larger when the data is", async ({ page }) => {
+    await openHub(page, "scenario=no-state-change-date");
+    const xTicks = () => page.locator('#chart .axis text[text-anchor="middle"]').allTextContents();
+    const yTicks = () => page.locator('#chart .axis text[text-anchor="end"]').allTextContents();
+    for (const t of ["Bug", "User Story"]) await page.locator("#types label", { hasText: t }).locator("input").uncheck();
+    await expect.poll(async () => inClause(await lastWiql(page), "System.WorkItemType")).toEqual(["Task"]);
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await hubRow(page, ANCHORS.task)).toMatchObject({ age: 12, inState: 12 }); // the only item left
+    expect(await xTicks()).toEqual(["0", "20", "40", "60"]);
+    expect(await yTicks()).toEqual(["0", "10", "20", "30"]);
+    await expect(page.locator("#chart .thr")).toHaveCount(0); // 1 year is off the axis; it does not stretch it
+
+    await page.locator("#types label", { hasText: "User Story" }).locator("input").check();
+    await expect(page.locator("#status")).toBeHidden();
+    expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ age: 450, inState: 400 });
+    expect(Number((await xTicks()).at(-1))).toBeGreaterThanOrEqual(450);
+    expect(Number((await yTicks()).at(-1))).toBeGreaterThanOrEqual(400);
+    await expect(page.locator("#chart .thr")).toHaveCount(1);
+  });
+
   test("scrum: PBI + Bug + Task, Committed and In Progress", async ({ page }) => {
     await openHub(page, "scenario=scrum");
     expect(await chipLabels(page, "types")).toEqual(["Bug", "Product Backlog Item", "Task"]);

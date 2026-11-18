@@ -9,16 +9,16 @@ Each dot is an open work item:
 - **x axis**: age, days since work started: the first time the item entered a state in the InProgress or Resolved category, read from its history,
 - **y axis**: days in the current state (`Microsoft.VSTS.Common.StateChangeDate`),
 - **dashed diagonal**: items that have not changed state since work started,
-- **red line**: "N days in the same state" threshold (1 year by default; 30 days, 90 days, 6 months, 1 year or 2 years),
+- **red vertical line**: "N days since work started" threshold (1 year by default; 30 days, 90 days, 6 months, 1 year or 2 years),
 - dot colour is the state; hover for details, click to open the work item.
 
-Below the chart there is a one-line summary, e.g. "27 of 140 items have been in the same state for more than 1 year. Only 50 items changed state in the last 30 days."
+Below the chart there is a one-line summary, e.g. "27 of 140 items started more than 1 year ago. Only 50 items changed state in the last 30 days."
 
 ## What's included
 
 | Part | Where | Description |
 |---|---|---|
-| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of all items, longest in their current state first. **Download report** saves the current view as one PNG: filters, summary numbers (median and 85th percentile age, oldest item, over threshold, changed in the last 30 days), the chart, a per-state table and the items longest in state, in English or Polish, picked after clicking (the user's Azure DevOps language is offered first). Settings are remembered in the browser per project. |
+| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of all items, started longest ago first (days since start, then days in state). **Download report** saves the current view as one PNG: filters, summary numbers (median and 85th percentile age, oldest item, over threshold, changed in the last 30 days), the chart, a per-state table and the items started longest ago, in English or Polish, picked after clicking (the user's Azure DevOps language is offered first). Settings are remembered in the browser per project. |
 | **Aging WIP** widget | Dashboard → Add widget | Sizes from 2×2 to 6×4. Configuration: team (defaults to the dashboard's team), types, states, threshold. |
 
 ## How the data is computed

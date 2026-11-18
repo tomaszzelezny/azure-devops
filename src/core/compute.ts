@@ -137,6 +137,19 @@ export function ticks(max: number, count: number): number[] {
   return out;
 }
 
+/**
+ * One chart axis: at least `min` days; when the data goes further, it follows the data
+ * (2% headroom, rounded up to a whole tick step). Returns the axis end and its ticks.
+ */
+export function axis(dataMax: number, min: number, count: number): { max: number; ticks: number[] } {
+  const v = Math.max(min, dataMax * 1.02);
+  const step = niceMax(v / count);
+  const max = v <= min ? min : Math.ceil(v / step - 1e-9) * step;
+  const out: number[] = [];
+  for (let t = 0; t <= max + 1e-9; t += step) out.push(Math.round(t * 100) / 100);
+  return { max, ticks: out };
+}
+
 export function escapeWiql(s: string): string {
   return `'${s.replace(/'/g, "''")}'`;
 }
@@ -155,7 +168,7 @@ export function thresholdLabel(days: number): string {
 
 export function summary(points: AgingPoint[], thresholdDays: number): { stuck: number; fresh: number; total: number } {
   return {
-    stuck: points.filter((p) => p.inState > thresholdDays).length,
+    stuck: points.filter((p) => p.age > thresholdDays).length,
     fresh: points.filter((p) => p.inState <= 30).length,
     total: points.length,
   };
@@ -169,7 +182,7 @@ export function takeaway(points: AgingPoint[], thresholdDays: number): string {
   const tail = fresh === 0 ? "None of them changed state in the last 30 days."
     : fresh === total ? "All of them changed state in the last 30 days."
     : `Only ${fresh} ${fresh === 1 ? "item" : "items"} changed state in the last 30 days.`;
-  return `<b>${stuck} of ${total}</b> items have been in the same state for more than ${thresholdLabel(thresholdDays)}. ${tail}`;
+  return `<b>${stuck} of ${total}</b> items started more than ${thresholdLabel(thresholdDays)} ago. ${tail}`;
 }
 
 export interface StateStats {
@@ -188,12 +201,12 @@ export interface ReportStats {
   p85Age: number;
   /** Item with the highest age (undefined when there are no items). */
   oldest?: AgingPoint;
-  /** Items longer than the threshold in their current state. */
+  /** Items whose work started longer ago than the threshold (days since work started). */
   overThreshold: number;
   /** Items that changed state in the last 30 days. */
   fresh: number;
   byState: StateStats[];
-  /** Items longest in their current state, longest first. */
+  /** Items whose work started longest ago, oldest first (ties: longer in the current state first). */
   longest: AgingPoint[];
 }
 
@@ -213,6 +226,6 @@ export function reportStats(points: AgingPoint[], series: StateSeries[], thresho
       const d = ps.map((p) => p.inState);
       return { name: s.name, color: s.color, count: ps.length, medianInState: percentile(d, 0.5), p85InState: percentile(d, 0.85), maxInState: Math.max(0, ...d) };
     }),
-    longest: [...points].sort((a, b) => b.inState - a.inState).slice(0, longestCount),
+    longest: [...points].sort((a, b) => b.age - a.age || b.inState - a.inState).slice(0, longestCount),
   };
 }
