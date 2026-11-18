@@ -33,7 +33,7 @@ test.describe("hub · agile process", () => {
 
   test("table columns: no Assigned to; the last one shows the iteration path", async ({ page }) => {
     await openHub(page);
-    await expect(page.locator("#table th")).toHaveText(["ID", "Title", "Type", "State", "Days in state", "Days since start", "Iteration path"]);
+    await expect(page.locator("#table th")).toHaveText(["ID", "Title", "Type", "State", "Days since start", "Days in state", "Iteration path"]);
     expect(await hubRow(page, ANCHORS.stuckInTesting)).toMatchObject({ iteration: "Demo\\Sprint 3" });
     expect(await hubRow(page, ANCHORS.fresh)).toMatchObject({ iteration: "Demo\\Sprint 12" });
     const batch = (await calls(page)).find((c) => c.path.includes("workitemsbatch"))!;
@@ -170,12 +170,14 @@ test.describe("hub · agile process", () => {
     expect(await page.evaluate(() => (window as any).__mock.opened)).toEqual([ANCHORS.stuckInTesting, tipId]);
   });
 
-  test("item list shows the five longest in state, Show all expands it", async ({ page }) => {
+  test("item list shows the five started longest ago, Days since start before Days in state; Show all expands it", async ({ page }) => {
     await openHub(page);
     const rows = page.locator("#table tbody tr");
     const total = await rows.count();
     expect(total).toBeGreaterThan(5);
     await expect(page.locator("#table tbody tr:visible")).toHaveCount(5);
+    await expect(page.locator("#items h2")).toHaveText("Started longest ago");
+    expect(await page.locator("#table th.num").allTextContents()).toEqual(["Days since start", "Days in state"]);
     const days = await page.locator("#table tbody tr:visible td:nth-child(5)").allTextContents();
     const nums = days.map((d) => Number(d.replace(/\D/g, "")));
     expect(nums).toEqual([...nums].sort((a, b) => b - a));

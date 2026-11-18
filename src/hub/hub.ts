@@ -221,15 +221,15 @@ const PREVIEW_ROWS = 5;
 let showAll = false;
 
 function renderTable(points: AgingPoint[]): void {
-  const top = [...points].sort((a, b) => b.inState - a.inState);
+  const top = [...points].sort((a, b) => b.age - a.age || b.inState - a.inState);
   const n = (v: number) => Math.round(v).toLocaleString();
   $("items").hidden = !top.length;
   $("table").innerHTML =
     `<table><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>State</th>` +
-    `<th class="num">Days in state</th><th class="num">Days since start</th><th>Iteration path</th></tr></thead><tbody>` +
+    `<th class="num">Days since start</th><th class="num">Days in state</th><th>Iteration path</th></tr></thead><tbody>` +
     top.map((p, i) => `<tr${i >= PREVIEW_ROWS && !showAll ? " hidden" : ""}><td><a data-id="${p.item.id}" class="mono">${p.item.id}</a></td><td>${esc(p.item.title)}</td>` +
-      `<td>${esc(p.item.type)}</td><td>${esc(p.item.state)}</td><td class="num">${n(p.inState)}</td>` +
-      `<td class="num">${n(p.age)}</td><td>${esc(p.item.iterationPath)}</td></tr>`).join("") +
+      `<td>${esc(p.item.type)}</td><td>${esc(p.item.state)}</td><td class="num">${n(p.age)}</td>` +
+      `<td class="num">${n(p.inState)}</td><td>${esc(p.item.iterationPath)}</td></tr>`).join("") +
     `</tbody></table>`;
   const more = $("more") as HTMLButtonElement;
   more.hidden = top.length <= PREVIEW_ROWS;

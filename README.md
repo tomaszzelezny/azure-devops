@@ -18,7 +18,7 @@ Below the chart there is a one-line summary, e.g. "27 of 140 items started more 
 
 | Part | Where | Description |
 |---|---|---|
-| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of all items, longest in their current state first. **Download report** saves the current view as one PNG: filters, summary numbers (median and 85th percentile age, oldest item, over threshold, changed in the last 30 days), the chart, a per-state table and the items longest in state, in English or Polish, picked after clicking (the user's Azure DevOps language is offered first). Settings are remembered in the browser per project. |
+| **Aging WIP** hub | Boards → Aging WIP | Pick team, work item types, states (only InProgress and Resolved categories are offered) and threshold; legend with counts (click to hide a state); table of all items, started longest ago first (days since start, then days in state). **Download report** saves the current view as one PNG: filters, summary numbers (median and 85th percentile age, oldest item, over threshold, changed in the last 30 days), the chart, a per-state table and the items longest in state, in English or Polish, picked after clicking (the user's Azure DevOps language is offered first). Settings are remembered in the browser per project. |
 | **Aging WIP** widget | Dashboard → Add widget | Sizes from 2×2 to 6×4. Configuration: team (defaults to the dashboard's team), types, states, threshold. |
 
 ## How the data is computed
