@@ -5,7 +5,7 @@ See at a glance which work items are getting old and which are stuck. Each dot i
 ![Aging WIP hub](img/screenshots/hub.png)
 
 - Dots near the dashed diagonal have not changed state since work started.
-- Dots above the red line have been in the same state for longer than the chosen threshold (a year by default).
+- Dots right of the red vertical line are items whose work started longer ago than the chosen threshold (a year by default).
 - Hover a dot for details, click it to open the work item.
 
 ## Where to find it

@@ -51,7 +51,7 @@ test("summary and takeaway", () => {
     item(3, "OnHold", "2026-01-01", "2026-03-01"),
   ], now);
   assert.deepEqual(summary(pts, 365), { stuck: 1, fresh: 1, total: 3 });
-  assert.equal(takeaway(pts, 365), "<b>1 of 3</b> items have been in the same state for more than 1 year. Only 1 item changed state in the last 30 days.");
+  assert.equal(takeaway(pts, 365), "<b>1 of 3</b> items started more than 1 year ago. Only 1 item changed state in the last 30 days.");
   assert.deepEqual(seriesFor(["Active", "OnHold"], pts).map((s) => [s.name, s.color, s.count]), [["Active", 0, 2], ["OnHold", 1, 1]]);
 });
 

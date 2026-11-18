@@ -27,7 +27,7 @@ test("report numbers: count, median and 85th percentile age, oldest, over thresh
   assert.equal(s.medianAge, 100);
   assert.equal(Math.round(s.p85Age), 520); // 400 + 0.4 × (700 − 400)
   assert.equal(s.oldest?.item.id, 5);
-  assert.equal(s.overThreshold, 1);
+  assert.equal(s.overThreshold, 2); // started 400 and 700 days ago; days in state do not count
   assert.equal(s.fresh, 3); // 5, 20 and 30 days in state
   assert.deepEqual(s.longest.map((p) => p.item.id), [3, 2, 5, 4, 1]);
 });
@@ -101,7 +101,7 @@ test("the report SVG is in the chosen language, with filters, numbers and the ch
     assert.ok(pl.includes(s), `PL report contains "${s}"`);
   }
   const en = reportSvg(input("en", { team: "Team A", includeCurrentIteration: true })).svg;
-  for (const s of ["Days since work started", "Days in the current state", "By state · days in the current state", "Started longest ago", "Since start", "Aging WIP report", "Team A", "current iteration included", "more than 1 year in one state"]) {
+  for (const s of ["Days since work started", "Days in the current state", "By state · days in the current state", "Started longest ago", "Since start", "Aging WIP report", "Team A", "current iteration included", "started more than 1 year ago"]) {
     assert.ok(en.includes(s), `EN report contains "${s}"`);
   }
   assert.ok(!en.includes("Raport"));

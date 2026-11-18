@@ -155,7 +155,7 @@ export function thresholdLabel(days: number): string {
 
 export function summary(points: AgingPoint[], thresholdDays: number): { stuck: number; fresh: number; total: number } {
   return {
-    stuck: points.filter((p) => p.inState > thresholdDays).length,
+    stuck: points.filter((p) => p.age > thresholdDays).length,
     fresh: points.filter((p) => p.inState <= 30).length,
     total: points.length,
   };
@@ -169,7 +169,7 @@ export function takeaway(points: AgingPoint[], thresholdDays: number): string {
   const tail = fresh === 0 ? "None of them changed state in the last 30 days."
     : fresh === total ? "All of them changed state in the last 30 days."
     : `Only ${fresh} ${fresh === 1 ? "item" : "items"} changed state in the last 30 days.`;
-  return `<b>${stuck} of ${total}</b> items have been in the same state for more than ${thresholdLabel(thresholdDays)}. ${tail}`;
+  return `<b>${stuck} of ${total}</b> items started more than ${thresholdLabel(thresholdDays)} ago. ${tail}`;
 }
 
 export interface StateStats {
@@ -188,7 +188,7 @@ export interface ReportStats {
   p85Age: number;
   /** Item with the highest age (undefined when there are no items). */
   oldest?: AgingPoint;
-  /** Items longer than the threshold in their current state. */
+  /** Items whose work started longer ago than the threshold (days since work started). */
   overThreshold: number;
   /** Items that changed state in the last 30 days. */
   fresh: number;

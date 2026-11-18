@@ -18,7 +18,7 @@ function draw(): void {
   renderLegend($("legend"), series, hidden);
   const s = summary(points, threshold);
   $("take").innerHTML = s.total
-    ? `<b>${s.stuck} of ${s.total}</b> in the same state for more than ${esc(thresholdLabel(threshold))}`
+    ? `<b>${s.stuck} of ${s.total}</b> started more than ${esc(thresholdLabel(threshold))} ago`
     : NO_ITEMS;
   // Measure after the legend and summary are in place, so the chart gets exactly the remaining height.
   const chart = $("chart");

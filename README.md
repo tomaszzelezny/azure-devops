@@ -9,10 +9,10 @@ Each dot is an open work item:
 - **x axis**: age, days since work started: the first time the item entered a state in the InProgress or Resolved category, read from its history,
 - **y axis**: days in the current state (`Microsoft.VSTS.Common.StateChangeDate`),
 - **dashed diagonal**: items that have not changed state since work started,
-- **red line**: "N days in the same state" threshold (1 year by default; 30 days, 90 days, 6 months, 1 year or 2 years),
+- **red vertical line**: "N days since work started" threshold (1 year by default; 30 days, 90 days, 6 months, 1 year or 2 years),
 - dot colour is the state; hover for details, click to open the work item.
 
-Below the chart there is a one-line summary, e.g. "27 of 140 items have been in the same state for more than 1 year. Only 50 items changed state in the last 30 days."
+Below the chart there is a one-line summary, e.g. "27 of 140 items started more than 1 year ago. Only 50 items changed state in the last 30 days."
 
 ## What's included
 

@@ -17,7 +17,7 @@ test.describe("hub · agile process", () => {
     const expected = await page.evaluate(() => (window as any).__mock.scenario.items.filter((i: any) =>
       ["User Story", "Bug", "Task"].includes(i.type) && ["Active", "OnHold", "For Testing", "Resolved"].includes(i.state)).length);
     await expect(dots(page)).toHaveCount(expected);
-    await expect(page.locator("#take")).toHaveText(new RegExp(`^\\d+ of ${expected} items have been in the same state for more than 1 year\\.`));
+    await expect(page.locator("#take")).toHaveText(new RegExp(`^\\d+ of ${expected} items started more than 1 year ago\\.`));
   });
 
   test("age counts from the first start, time in state from the last change", async ({ page }) => {
@@ -151,8 +151,8 @@ test.describe("hub · agile process", () => {
   test("threshold line and summary follow the threshold", async ({ page }) => {
     await openHub(page);
     await page.selectOption("#threshold", "90");
-    await expect(page.locator("#chart .thr-label")).toHaveText("90 days in the same state");
-    await expect(page.locator("#take")).toContainText("for more than 90 days");
+    await expect(page.locator("#chart .thr-label")).toHaveText("90 days since work started");
+    await expect(page.locator("#take")).toContainText("started more than 90 days ago");
   });
 
   test("clicking a dot or a table link opens the work item", async ({ page }) => {

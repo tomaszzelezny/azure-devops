@@ -6,7 +6,7 @@ export interface AgingSettings {
   types: string[];
   /** State names. Empty means every state in the InProgress and Resolved categories. */
   states: string[];
-  /** Red reference line: "N days in the same state". */
+  /** Red vertical reference line: "N days since work started". */
   thresholdDays: number;
   /** When false, items in the team's current iteration (the default team's, for the whole project) are left out. */
   includeCurrentIteration: boolean;

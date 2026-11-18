@@ -84,7 +84,7 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
   hline(P, REPORT_WIDTH - P, y);
 
   const gap = 10, tw = (INNER - 5 * gap) / 6, th = 104;
-  // Summary tiles, grouped by measure: tiles 2–4 count days since work started, 5–6 days in the current state.
+  // Summary tiles, grouped by measure: tiles 2–5 count days since work started, 6 days in the current state.
   y += 16;
   const groupCaption = (from: number, to: number, label: string) => {
     const x1 = P + from * (tw + gap), x2 = P + (to + 1) * (tw + gap) - gap;
@@ -101,8 +101,8 @@ export function reportSvg(r: ReportInput): { svg: string; width: number; height:
     { k: T.over, v: ofTotal(s.overThreshold), u: T.overNote.replace("{t}", thr), crit: true },
     { k: T.fresh, v: ofTotal(s.fresh), u: "" },
   ];
-  groupCaption(1, 3, T.groupSinceStart);
-  groupCaption(4, 5, T.groupInState);
+  groupCaption(1, 4, T.groupSinceStart);
+  groupCaption(5, 5, T.groupInState);
   y += 26;
   tiles.forEach((t, i) => {
     const x = P + i * (tw + gap);

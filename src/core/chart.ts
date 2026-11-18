@@ -29,7 +29,7 @@ export interface ChartOptions {
   locale?: string;
 }
 
-const LABELS = { x: "days since work started", y: "days in current state", threshold: (d: number) => `${thresholdLabel(d)} in the same state` };
+const LABELS = { x: "days since work started", y: "days in current state", threshold: (d: number) => `${thresholdLabel(d)} since work started` };
 
 let tip: HTMLDivElement | undefined;
 
@@ -136,8 +136,10 @@ export function renderAgingChart(host: HTMLElement, points: AgingPoint[], series
   el("line", { x1: x(0), y1: y(0), x2: x(m), y2: y(m), class: "diag" }, svg);
   const thr = opts.thresholdDays;
   if (thr < m) {
-    el("line", { x1: ml, x2: W - mr, y1: y(thr), y2: y(thr), class: "thr" }, svg);
-    el("text", { x: W - mr - 4, y: y(thr) - 5, "text-anchor": "end", class: "thr-label", "font-size": fs }, svg)
+    // Vertical: the threshold counts days since work started (x axis). The label runs down along the line, left of it.
+    const tx = x(thr) - 5, ty = mt + 4;
+    el("line", { x1: x(thr), x2: x(thr), y1: mt, y2: H - mb, class: "thr" }, svg);
+    el("text", { x: tx, y: ty, transform: `rotate(-90 ${tx} ${ty})`, "text-anchor": "end", class: "thr-label", "font-size": fs }, svg)
       .textContent = L.threshold(thr);
   }
   el("line", { x1: ml, x2: W - mr, y1: y(0), y2: y(0), class: "base" }, svg);

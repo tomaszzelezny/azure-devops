@@ -19,7 +19,7 @@ test.describe("dashboard widget", () => {
     expect((await mock(page)).result).toEqual({ statusType: 0 });
     await expect(page.locator("#title")).toHaveText("Team A WIP");
     expect(await lastWiql(page)).toContain("[System.AreaPath] UNDER 'Demo\\Team A'");
-    await expect(page.locator("#take")).toHaveText(/^\d+ of \d+ in the same state for more than 1 year$/);
+    await expect(page.locator("#take")).toHaveText(/^\d+ of \d+ started more than 1 year ago$/);
     expect(await dots(page).count()).toBeGreaterThan(0);
   });
 
@@ -45,7 +45,7 @@ test.describe("dashboard widget", () => {
     expect(inClause(q, "System.State")).toEqual(["Active"]);
     expect(inClause(q, "System.WorkItemType")).toEqual(["Bug"]);
     await expect(page.locator("#take")).toContainText("more than 90 days");
-    await expect(page.locator("#chart .thr-label")).toHaveText("90 days in the same state");
+    await expect(page.locator("#chart .thr-label")).toHaveText("90 days since work started");
   });
 
   test("without the current iteration: leaves out the dashboard team's current iteration", async ({ page }) => {
